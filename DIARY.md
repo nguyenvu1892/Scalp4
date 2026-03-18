@@ -102,6 +102,36 @@
 **Kết quả:** 45/45 tests PASS ✅
 
 ---
+
+### 19/03/2026 — Sprint 2: Gymnasium Environment & Reward System ✅
+
+**Branch:** `sprint2-gym-env` → merged to `main`
+**Người thực hiện:** AI Dev (lệnh từ Tech Lead Gem)
+**Phương pháp:** TDD (Test-Driven Development) — viết test trước, code sau
+
+**Thay đổi:**
+| File | Hành động | Mô tả |
+|------|-----------|-------|
+| `environments/market_sim.py` | Tạo mới | Spread (fixed/variable/realistic), slippage, pessimistic exit (SL trước TP) |
+| `environments/reward_engine.py` | Tạo mới | 8-component reward: PnL, shaping, scalp bonus, R:R, cost(×1.5), hold(×1.2), overtrade(×2), DD(exp β=5) |
+| `environments/scalp_env.py` | Tạo mới | Gymnasium Env: Box(-1,1)×2 action, 27-feature obs, XAUUSD fixed lot, DD killswitch |
+| `live/risk_manager.py` | Tạo mới | Lot calc, XAUUSD 0.01 rule, DD tracking, killswitch 45%, force terminate 50% |
+| `configs/train_config.yaml` | Sửa | Reward weights baseline từ Tech Lead: w_cost=1.5, w_overtrade=2.0, dd_beta=5.0 |
+| `configs/validator.py` | Sửa | RewardConfig updated cho w_* naming convention |
+| `tests/test_market_sim.py` | Tạo mới | 8 tests: spread, slippage, pessimistic execution, session boundaries |
+| `tests/test_reward.py` | Tạo mới | 16 tests: 8 reward components + total reward |
+| `tests/test_risk_manager.py` | Tạo mới | 12 tests: XAUUSD lot, DD, killswitch, max positions, confidence |
+| `tests/test_env.py` | Tạo mới | 12 tests: spaces, reset, step, gym env_checker, random episode |
+| `scripts/episode_demo.py` | Tạo mới | Random episode demo log |
+
+**Random Episode Log:**
+```
+Start: $200.00 → End: $199.87 | PnL: -$0.13 | DD: 0.2% | Trades: 11 | Steps: 200
+```
+
+**Kết quả:** 93/93 tests PASS ✅ (45 Sprint 1 + 48 Sprint 2) | gymnasium env_checker PASS ✅
+
+---
 TEMPLATE — Copy block dưới đây khi ghi nhật ký mới:
 
 ### DD/MM/YYYY — Tiêu đề ngắn
