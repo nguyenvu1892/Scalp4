@@ -1,0 +1,95 @@
+# ============================================================
+# SCALFOREX — TRAINING CONFIG
+# SAC hyperparameters, curriculum, reward weights
+# ============================================================
+
+sac:
+  learning_rate: 3.0e-4
+  buffer_size: 500000
+  batch_size: 256
+  gamma: 0.99                        # Discount factor
+  tau: 0.005                         # Soft update coefficient
+  ent_coef: "auto"                   # Automatic entropy tuning
+  target_entropy: "auto"
+
+  # Network architecture
+  actor_hidden: [256, 256]
+  critic_hidden: [256, 256]
+
+  # Action space (Phase 1: 2D)
+  action_dim: 2                      # [confidence, risk_fraction]
+  action_bounds:
+    confidence: [-1.0, 1.0]          # <0 = SELL, >0 = BUY
+    risk_fraction: [0.1, 1.0]        # Fraction of max risk
+
+# Transformer encoder
+transformer:
+  d_model: 64
+  nhead: 4
+  num_layers: 2
+  dim_feedforward: 128
+  dropout: 0.1
+  max_sequence_length: 60            # = lookback_window
+
+# Cross-Attention (Multi-TF)
+cross_attention:
+  d_model: 64
+  nhead: 4
+  context_window: 24                 # 24 bars H1 = 24h context
+  use_causal_mask: true              # Chống look-ahead bias
+
+# Regime detector
+regime:
+  hidden_dim: 64
+  num_regimes: 3                     # trending, ranging, volatile
+  learnable: true                    # End-to-end trainable (not HMM)
+
+# Curriculum stages
+curriculum:
+  stages:
+    - name: "kindergarten"
+      steps: 50000
+      max_dd_pct: 0.80
+      spread_mode: "fixed"
+      regimes: ["trending"]
+
+    - name: "elementary"
+      steps: 150000
+      max_dd_pct: 0.60
+      spread_mode: "variable"
+      regimes: ["trending", "ranging"]
+
+    - name: "highschool"
+      steps: 300000
+      max_dd_pct: 0.50
+      spread_mode: "realistic"
+      regimes: ["trending", "ranging", "volatile"]
+
+    - name: "university"
+      steps: 500000
+      max_dd_pct: 0.50
+      spread_mode: "realistic"
+      regimes: ["all"]
+      use_augmentation: true
+
+# Reward weights
+reward:
+  pnl_weight: 1.0
+  shaping_weight: 0.05
+  scalp_bonus_fast: 0.5              # Close < 6 bars (30 min) with profit
+  scalp_bonus_medium: 0.2            # Close < 30 bars (2.5h) with profit
+  hold_penalty_rate: 0.01
+  dd_penalty_alpha: 2.0
+  dd_penalty_beta: 3.0
+  overtrade_penalty: 0.3
+  rr_bonus_weight: 0.2
+  max_trades_per_day: 10
+
+# Training
+training:
+  total_steps: 1000000
+  eval_freq: 10000
+  save_freq: 50000
+  log_to_wandb: true
+  seed: 42
+  device: "auto"                     # auto-detect GPU/CPU

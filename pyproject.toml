@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "scalforex"
+version = "0.1.0"
+description = "DRL Scalping System for Exness — AI Trading Bot"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+
+dependencies = [
+    "polars>=1.0",
+    "numpy>=1.26",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "MetaTrader5>=5.0.45",
+    "torch>=2.1",
+    "gymnasium>=0.29",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.4",
+]
+train = [
+    "wandb>=0.17",
+    "stable-baselines3>=2.3",
+    "optuna>=3.6",
+]
+live = [
+    "python-telegram-bot>=21.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]

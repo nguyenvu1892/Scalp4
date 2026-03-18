@@ -15,7 +15,7 @@ description: Tổng hợp 20 skills tối ưu nhất từ kho Antigravity Awesom
 
 | Sprint/Module | Skills được dùng | Ưu tiên |
 |---------------|------------------|---------|
-| **Toàn bộ dự án** | `python-pro`, `clean-code`, `architecture`, `git-pushing` | 🔴 Luôn dùng |
+| **Toàn bộ dự án** | `python-pro`, `clean-code`, `architecture`, `git-pushing` | ♾️ Luôn dùng |
 | **Sprint 1 — Foundation & Data** | `pydantic-models-py`, `polars`, `data-scientist` | ⬜ |
 | **Sprint 2 — Gym Environment** | `python-testing-patterns`, `error-handling-patterns` | ⬜ |
 | **Sprint 3 — Neural Architecture** | `ml-engineer`, `test-driven-development` | ⬜ |

@@ -1,0 +1,74 @@
+# ============================================================
+# SCALFOREX — SYMBOLS CONFIG
+# 5 symbols trên sàn Exness
+# ============================================================
+
+symbols:
+  XAUUSD:
+    type: "commodity"
+    pip_size: 0.01                   # 1 pip = 0.01 cho Gold
+    pip_value_per_lot: 1.0           # $1 per pip per 0.01 lot
+    min_lot: 0.01
+    max_lot: 1.0
+    lot_step: 0.01
+    avg_spread_pips: 20              # ~20 pips average spread on Exness
+    sessions: ["asian", "european", "us"]
+    is_crypto: false
+
+  ETHUSD:
+    type: "crypto"
+    pip_size: 0.01
+    pip_value_per_lot: 0.01
+    min_lot: 0.01
+    max_lot: 10.0
+    lot_step: 0.01
+    avg_spread_pips: 50
+    sessions: ["24/7"]
+    is_crypto: true
+
+  BTCUSD:
+    type: "crypto"
+    pip_size: 0.01
+    pip_value_per_lot: 0.01
+    min_lot: 0.01
+    max_lot: 5.0
+    lot_step: 0.01
+    avg_spread_pips: 100
+    sessions: ["24/7"]
+    is_crypto: true
+
+  US30:
+    type: "index"
+    pip_size: 0.01
+    pip_value_per_lot: 0.01
+    min_lot: 0.01
+    max_lot: 10.0
+    lot_step: 0.01
+    avg_spread_pips: 30
+    sessions: ["asian", "european", "us"]
+    is_crypto: false
+
+  USTEC:
+    type: "index"
+    pip_size: 0.01
+    pip_value_per_lot: 0.01
+    min_lot: 0.01
+    max_lot: 10.0
+    lot_step: 0.01
+    avg_spread_pips: 25
+    sessions: ["asian", "european", "us"]
+    is_crypto: false
+
+# Timeframes
+timeframes:
+  primary: "M5"
+  secondary: "M15"
+  context:
+    - "H1"
+    - "H4"
+
+# Feature pipeline
+features:
+  lookback_window: 60                # 60 bars = 5 hours (M5)
+  total_features: 29
+  normalize: true                    # Welford's running normalizer

@@ -1,0 +1,30 @@
+# ============================================================
+# SCALFOREX — TRADING RULES
+# Quy tắc giao dịch cứng. Vi phạm = mất tiền.
+# ============================================================
+
+risk:
+  max_loss_per_trade_pct: 0.03       # 3% balance mỗi lệnh
+  max_total_drawdown_pct: 0.50       # 50% DD toàn tài khoản → killswitch
+  killswitch_drawdown_pct: 0.45      # 45% DD → force close all + stop
+  max_open_positions: 2              # Tối đa 2 lệnh cùng lúc
+  confidence_threshold: 0.3          # |confidence| < 0.3 → HOLD
+
+xauusd_rules:
+  fixed_lot: 0.01                    # XAUUSD fixed lot khi balance < threshold
+  dynamic_threshold: 600.0           # Balance >= $600 → chuyển sang 3% rule
+
+session:
+  trade_all_sessions: true           # Giao dịch Á/Âu/Mỹ — có cơ hội là vào
+  force_close_eod_forex: true        # Forex/Index đóng trước EOD
+  crypto_24_7: true                  # ETHUSD, BTCUSD giao dịch 24/7
+
+execution:
+  slippage_buffer_pct: 0.001         # 0.1% buffer cho slippage
+  max_spread_multiplier: 3.0         # Không vào lệnh nếu spread > 3× average
+  order_timeout_seconds: 10          # Timeout chờ execution
+
+account:
+  starting_balance: 200.0            # Vốn ban đầu $200
+  broker: "Exness"
+  platform: "MT5"

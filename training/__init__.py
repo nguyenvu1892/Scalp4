@@ -1,0 +1,1 @@
+# ScalForex — training
