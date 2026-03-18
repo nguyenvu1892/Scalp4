@@ -1,0 +1,63 @@
+# ScalForex — Docker Compose
+# 24/7 AI Scalping: Crypto (BTCUSD, ETHUSD) xuyên cuối tuần
+# Hardware: Dual Xeon 56t + 96GB RAM + GTX 750 Ti
+
+version: "3.8"
+
+services:
+  # Main AI Trading Bot
+  scalforex-trader:
+    build: .
+    container_name: scalforex-trader
+    restart: unless-stopped
+    environment:
+      - MT5_LOGIN=${MT5_LOGIN}
+      - MT5_PASSWORD=${MT5_PASSWORD}
+      - MT5_SERVER=${MT5_SERVER:-Exness-MT5Real}
+      - MT5_PATH=${MT5_PATH}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - PYTHONPATH=/app
+    volumes:
+      - ./logs:/app/logs
+      - ./checkpoints:/app/checkpoints
+      - ./reports:/app/reports
+      - ./configs:/app/configs
+    deploy:
+      resources:
+        limits:
+          cpus: "28"          # Half of Dual Xeon (other half for watchdog + system)
+          memory: 48G         # Half of 96GB
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # Watchdog — separate process monitoring trader health
+  scalforex-watchdog:
+    build: .
+    container_name: scalforex-watchdog
+    restart: unless-stopped
+    command: ["python", "-c", "from live.watchdog import Watchdog; w = Watchdog(); w.run()"]
+    environment:
+      - MT5_LOGIN=${MT5_LOGIN}
+      - MT5_PASSWORD=${MT5_PASSWORD}
+      - MT5_SERVER=${MT5_SERVER:-Exness-MT5Real}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - PYTHONPATH=/app
+    volumes:
+      - ./logs:/app/logs       # Shared heartbeat file
+    depends_on:
+      - scalforex-trader
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
