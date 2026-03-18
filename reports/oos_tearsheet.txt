@@ -1,0 +1,26 @@
+============================================================
+  SCALFOREX — QUANT TEARSHEET (OOS Backtest)
+============================================================
+
+  Initial Balance:  $200.00
+  Final Balance:    $200.14
+  Total PnL:        $0.14
+  Total Trades:     7
+
+  ── GATE KEEPER METRICS ──
+  Sharpe Ratio:     3.57   (Gate > 0.8)  ✅
+  Max Drawdown:     0.4%  (Gate < 40%) ✅
+  Win Rate:         85.7%  (Gate >= 45%) ✅
+
+  ── TRADE ANALYSIS ──
+  Profit Factor:    1.37
+  Expectancy:       $0.0197/trade
+  Avg Win:          $0.0851
+  Avg Loss:         $0.3723
+  Best Trade:       $0.1460
+  Worst Trade:      $-0.3723
+  Avg Bars Held:    90.7
+
+  ── GATE VERDICT ──
+  🟢 ALL GATES PASSED — Ready for Demo Trading
+============================================================
