@@ -1,12 +1,13 @@
 ---
-description: Tổng hợp 17 skills tối ưu nhất từ kho Antigravity Awesome Skills (1,272+ skills) cho dự án RABIT-PROPFIRM DRL Trading System. Đọc file này khi cần tra cứu nhanh skill phù hợp cho từng module/sprint.
+description: Tổng hợp 20 skills tối ưu nhất từ kho Antigravity Awesome Skills (1,272+ skills) cho dự án SCALFOREX DRL Scalping System. Đọc file này khi cần tra cứu nhanh skill phù hợp cho từng module/sprint.
 ---
 
-# 🎯 PROJECT SKILLS — RABIT-PROPFIRM DRL SYSTEM
+# 🎯 PROJECT SKILLS — SCALFOREX DRL SCALPING SYSTEM
 
 > **Nguồn:** `.agent/skills/skills/` (Antigravity Awesome Skills v8.2.0, 1,272+ skills)
-> **Đã lọc:** 17 skills phù hợp nhất cho dự án DRL Trading
-> **Cách dùng:** Khi cần guidance cho module cụ thể, đọc phần tương ứng bên dưới hoặc mở SKILL.md gốc để xem chi tiết
+> **Đã lọc:** 20 skills phù hợp nhất cho dự án DRL Scalping trên Exness
+> **Dự án:** ScalForex — AI Scalping bot, vốn $200, 5 symbols, sàn Exness
+> **Cách dùng:** Khi cần guidance cho module cụ thể, đọc phần tương ứng hoặc mở SKILL.md gốc
 
 ---
 
@@ -14,14 +15,14 @@ description: Tổng hợp 17 skills tối ưu nhất từ kho Antigravity Awesom
 
 | Sprint/Module | Skills được dùng | Ưu tiên |
 |---------------|------------------|---------|
-| **Toàn bộ dự án** | `python-pro`, `clean-code`, `architecture` | 🔴 Luôn dùng |
-| **Sprint 1 — Data Engine** | `polars`, `data-scientist` | ✅ DONE |
-| **Sprint 2 — Gym Environment** | `python-testing-patterns`, `error-handling-patterns` | ✅ DONE |
-| **Sprint 3 — Neural Architecture** | `ml-engineer`, `python-pro`, `test-driven-development` | 🔴 ĐANG LÀM |
-| **Sprint 4 — Training Pipeline** | `mlops-engineer`, `ml-engineer` | ⬜ |
-| **Sprint 5 — Ensemble & Backtest** | `quant-analyst`, `backtesting-frameworks`, `risk-metrics-calculation` | ⬜ |
-| **Sprint 6 — Paper Trading** | `risk-manager`, `telegram-bot-builder`, `debugging-strategies` | ⬜ |
-| **Sprint 7 — Live** | `risk-manager`, `telegram-bot-builder`, `mlops-engineer`, `error-handling-patterns` | ⬜ |
+| **Toàn bộ dự án** | `python-pro`, `clean-code`, `architecture`, `git-pushing` | 🔴 Luôn dùng |
+| **Sprint 1 — Foundation & Data** | `pydantic-models-py`, `polars`, `data-scientist` | ⬜ |
+| **Sprint 2 — Gym Environment** | `python-testing-patterns`, `error-handling-patterns` | ⬜ |
+| **Sprint 3 — Neural Architecture** | `ml-engineer`, `test-driven-development` | ⬜ |
+| **Sprint 4 — Training Pipeline** | `mlops-engineer`, `ml-engineer`, `python-performance-optimization` | ⬜ |
+| **Sprint 5 — Backtest & Ensemble** | `quant-analyst`, `backtesting-frameworks`, `risk-metrics-calculation` | ⬜ |
+| **Sprint 6 — Paper Trading** | `risk-manager`, `telegram-bot-builder`, `debugging-strategies`, `docker-expert` | ⬜ |
+| **Sprint 7 — Live $200** | `risk-manager`, `telegram-bot-builder`, `error-handling-patterns`, `docker-expert` | ⬜ |
 
 ---
 
@@ -31,37 +32,25 @@ description: Tổng hợp 17 skills tối ưu nhất từ kho Antigravity Awesom
 📁 `.agent/skills/skills/python-pro/SKILL.md`
 
 **Khi nào dùng:** Viết BẤT KỲ code Python nào trong dự án
-**Áp dụng:**
-- Type Hinting 100% — bắt buộc theo quy tắc dự án
+**Áp dụng cho ScalForex:**
+- Type Hinting 100% — bắt buộc cho mọi function
 - Pydantic v2 cho config validation (`configs/validator.py`)
 - `pytest` + fixtures + coverage > 90%
-- Profiling với `cProfile`, `py-spy`, `memory_profiler` — quan trọng cho inference latency
-- NumPy optimization cho data processing pipeline
-- Advanced decorators + context managers cho resource cleanup (MT5 connection)
+- Profiling inference latency — scalping cần < 500ms mỗi decision
+- NumPy/Polars optimization cho feature pipeline M5 data
+- Context managers cho MT5 connection lifecycle
 
 **Quy tắc bắt buộc:**
 ```
 ✅ Type hints cho MỌI function parameter + return type
-✅ Pydantic model cho MỌI config input
+✅ Pydantic model cho MỌI YAML config
 ✅ pytest cho MỌI module trước khi merge
-✅ Profiling inference latency < 500ms per model
+✅ Inference latency < 500ms (scalping = tốc độ)
 ```
 
 ---
 
-### 2. `python-patterns`
-📁 `.agent/skills/skills/python-patterns/SKILL.md`
-
-**Khi nào dùng:** Khi quyết định architecture/pattern cho module mới
-**Áp dụng:**
-- **Async vs Sync**: MT5 bridge dùng sync (blocking API), data pipeline dùng sync (CPU-bound), monitoring có thể async
-- **Project structure**: Monorepo đã thiết kế, follow "by feature" pattern
-- **Error handling**: Domain exceptions trong services, catch ở layer trên
-- **Pydantic for validation**: Mọi YAML config → Pydantic model → chặn lỗi config trước khi mất tiền
-
----
-
-### 3. `clean-code`
+### 2. `clean-code`
 📁 `.agent/skills/skills/clean-code/SKILL.md`
 
 **Khi nào dùng:** Viết code, review, refactor
@@ -74,218 +63,7 @@ description: Tổng hợp 17 skills tối ưu nhất từ kho Antigravity Awesom
 
 ---
 
-## 🧠 NHÓM 2: ML/AI & DEEP LEARNING (Sprint 3-5)
-
-### 4. `ml-engineer`
-📁 `.agent/skills/skills/ml-engineer/SKILL.md`
-
-**Khi nào dùng:** Sprint 3 (Neural Architecture), Sprint 4 (Training Pipeline)
-**Áp dụng quan trọng:**
-
-**PyTorch 2.x:**
-- `torch.compile` cho inference optimization
-- Mixed precision training (`torch.cuda.amp`) để tiết kiệm GPU memory
-- Gradient checkpointing cho Transformer nếu memory tight
-- ONNX export cho model serving optimization
-
-**Model Serving:**
-- Batching inference cho ensemble (3 models)
-- Model quantization nếu inference > 500ms
-- Knowledge distillation: train student model nhỏ bắt chước ensemble
-
-**Experiment Tracking:**
-- W&B logging mỗi episode: reward, PnL, DD, trade_count, win_rate
-- Model checkpointing mỗi stage transition
-- Hyperparameter sweep tracking
-
-**Model Evaluation:**
-- SHAP + LIME cho feature importance
-- Temporal validation (không random split — time-series!)
-- Walk-forward testing cho out-of-sample backtest
-
----
-
-### 5. `data-scientist`
-📁 `.agent/skills/skills/data-scientist/SKILL.md`
-
-**Khi nào dùng:** Feature engineering, data analysis, model evaluation
-**Áp dụng:**
-- **Time series analysis**: Đặc biệt cho SMC feature validation — verify features có signal
-- **Feature engineering**: Feature selection, importance analysis → loại noise features
-- **Anomaly detection**: Detect data quality issues trong M5 data
-- **Statistical testing**: So sánh Transformer vs MLP baseline — cần statistical significance
-- **Visualization**: Equity curve, drawdown plot, feature importance chart
-
----
-
-### 6. `mlops-engineer`
-📁 `.agent/skills/skills/mlops-engineer/SKILL.md`
-
-**Khi nào dùng:** Sprint 4 (Training Pipeline), Sprint 7 (Nightly Retrain)
-**Áp dụng:**
-
-**Experiment Tracking:**
-- W&B integration cho training monitoring
-- DVC cho data versioning (parquet files)
-- MLflow/custom registry cho model versioning
-
-**Training Infrastructure:**
-- GPU scheduling cho cloud training (RunPod/AWS)
-- Docker image cho reproducible training env
-- Distributed training với PyTorch DDP nếu cần scale
-
-**Continuous Training:**
-- Weekly safe retrain pipeline
-- Validation gate: backtest new model → deploy/reject
-- Rollback capability — model registry `current` symlink
-
-**Monitoring:**
-- Model drift detection trên live data
-- Performance degradation alerts
-- Cost monitoring cho GPU usage
-
----
-
-## 📊 NHÓM 3: QUANTITATIVE FINANCE & TRADING (Sprint 2, 5-7)
-
-### 7. `quant-analyst`
-📁 `.agent/skills/skills/quant-analyst/SKILL.md`
-
-**Khi nào dùng:** Backtest, strategy evaluation, market microstructure
-**Áp dụng:**
-- **Risk metrics**: Sharpe, Sortino, Max DD, Calmar, Profit Factor
-- **Robust backtesting**: Transaction costs, slippage, out-of-sample
-- **Risk-adjusted returns** over absolute returns — Gate: Sharpe > 1.0
-- **Parameter sensitivity analysis**: Hyperparameter robustness check
-- **Market microstructure**: Variable spread model, slippage model
-
-**Quy tắc đặc biệt cho dự án:**
-```
-⚠️ Không dùng indicator truyền thống (RSI, ATR, Bollinger, MA)
-✅ Chỉ SMC + Volume + Price Action features
-⚠️ Không dùng random train/test split — phải temporal split
-✅ Walk-forward analysis cho mọi backtest
-```
-
----
-
-### 8. `backtesting-frameworks`
-📁 `.agent/skills/skills/backtesting-frameworks/SKILL.md`
-
-**Khi nào dùng:** Sprint 5 (Out-of-sample validation), Sprint 6 (paper vs backtest comparison)
-**Áp dụng:**
-- **Look-ahead bias prevention**: Cross-Attention chỉ dùng completed bars (H1/H4)
-- **Survivorship bias**: Verify data không missing bars
-- **Transaction cost model**: Realistic spread + commission
-- **Walk-forward analysis**: Train/validate/test temporal split
-- **Event-driven simulation**: `prop_env.py` step-by-step execution
-
----
-
-### 9. `risk-metrics-calculation`
-📁 `.agent/skills/skills/risk-metrics-calculation/SKILL.md`
-
-**Khi nào dùng:** Quant Tearsheet generation, risk monitoring
-**Áp dụng:**
-- **VaR/CVaR**: Daily Value at Risk cho Prop Firm DD monitoring
-- **Sharpe/Sortino**: Gate metric (Sharpe > 1.0 required)
-- **Drawdown analysis**: Max DD, underwater plot, recovery time
-- **Position sizing**: Kelly criterion adjusted cho Prop Firm rules
-- **Risk limits**: 0.3% per trade, 3% daily, 4.5% killswitch
-
----
-
-### 10. `risk-manager`
-📁 `.agent/skills/skills/risk-manager/SKILL.md`
-
-**Khi nào dùng:** Sprint 6-7 (Live risk management)
-**Áp dụng:**
-- **R-multiple tracking**: Normalize mọi trade theo R (1R = max loss = 0.3%)
-- **Expectancy**: (Win% × Avg Win) - (Loss% × Avg Loss) — phải > 0
-- **Position sizing**: account_risk × balance / stoploss_distance
-- **Correlation monitoring**: Avoid correlated trades (VD: US100 + US30 cùng lúc)
-- **Monte Carlo simulation**: Stress test equity curve trên 1000 random sequences
-- **Stop-loss/Take-profit**: SL từ SMC range width, TP từ RR ratio
-
----
-
-## 🧪 NHÓM 4: TESTING & QUALITY (Mọi Sprint)
-
-### 11. `test-driven-development`
-📁 `.agent/skills/skills/test-driven-development/SKILL.md`
-
-**Khi nào dùng:** TRƯỚC KHI viết bất kỳ production code nào
-**Quy tắc áp dụng — NGHIÊM NGẶT:**
-
-```
-RED   → Viết test fail trước
-GREEN → Viết code tối thiểu để pass
-REFACTOR → Clean up, giữ test green
-```
-
-**Áp dụng cụ thể cho dự án:**
-- `test_action_gating.py` → test trước khi viết `action_gating.py`
-- `test_env_step.py` → test trước khi viết `prop_env.py`
-- `test_reward_hack.py` → test reward không bị exploit
-- Mỗi unit test phải **FAIL trước** → rồi mới implement
-
----
-
-### 12. `python-testing-patterns`
-📁 `.agent/skills/skills/python-testing-patterns/SKILL.md`
-
-**Khi nào dùng:** Thiết kế test infrastructure, fixtures, mocking
-**Áp dụng:**
-- **Fixtures**: `env_fixture` cho Gymnasium env, `model_fixture` cho trained model
-- **Parametrize**: Test nhiều symbols cùng lúc `@pytest.mark.parametrize("symbol", SYMBOLS)`
-- **Mocking**: Mock MT5 API cho unit test (không cần connect MT5 thật)
-- **Property-based testing**: Hypothesis cho numeric edge cases (NaN, inf, extreme values)
-- **Async testing**: `pytest-asyncio` nếu có async components
-
----
-
-### 13. `debugging-strategies`
-📁 `.agent/skills/skills/debugging-strategies/SKILL.md`
-
-**Khi nào dùng:** Debug training không converge, model prediction sai, live execution issues
-**Áp dụng:**
-- **Systematic approach**: Reproduce → Hypothesize → Experiment → Verify
-- **Trading-specific debugging**:
-  - SAC không converge → check reward scale, action bounds, learning rate
-  - Model prediction luôn HOLD → check confidence distribution, threshold
-  - Live vs backtest mismatch → check spread model, slippage, data alignment
-
----
-
-## 🔧 NHÓM 5: DATA PROCESSING (Sprint 1, 3)
-
-### 14. `polars`
-📁 `.agent/skills/skills/polars/SKILL.md`
-
-**Khi nào dùng:** Data pipeline, feature engineering, data loading
-**Áp dụng:**
-- **Lazy evaluation** cho large datasets: `pl.scan_parquet()` thay vì `pl.read_parquet()`
-- **Window functions**: `.over()` cho rolling calculations trong features
-- **Parallel computation**: `with_columns()` compute tất cả features parallel
-- **Parquet I/O**: Native support, faster than CSV
-- **Type safety**: Strict typing prevents silent errors
-
-**Pattern cụ thể cho dự án:**
-```python
-# Feature pipeline — lazy evaluation + parallel
-lf = pl.scan_parquet("data/XAUUSD_M5.parquet")
-features = lf.with_columns(
-    pl.col("close").pct_change().alias("log_return"),
-    pl.col("volume").rolling_mean(20).alias("avg_volume"),
-    # ... tất cả 28 features compute parallel
-).collect()
-```
-
----
-
-## 🏗️ NHÓM 6: ARCHITECTURE & OPERATIONS (Sprint 6-7)
-
-### 15. `architecture`
+### 3. `architecture`
 📁 `.agent/skills/skills/architecture/SKILL.md`
 
 **Khi nào dùng:** Design decisions, trade-off analysis
@@ -293,47 +71,298 @@ features = lf.with_columns(
 - Start simple → add complexity khi proven necessary
 - ADR (Architecture Decision Record) cho decisions quan trọng:
   - Tại sao chọn SAC thay vì PPO?
-  - Tại sao 2D action trước rồi 4D?
-  - Tại sao weekly retrain thay vì nightly?
+  - Tại sao 2D action trước?
+  - Tại sao XAUUSD fixed lot?
 - Mỗi decision có trade-off analysis
 
 ---
 
-### 16. `telegram-bot-builder`
-📁 `.agent/skills/skills/telegram-bot-builder/SKILL.md`
+### 4. `git-pushing` ⭐ MỚI
+📁 `.agent/skills/skills/git-pushing/SKILL.md`
 
-**Khi nào dùng:** Sprint 6-7 (Alert system)
-**Áp dụng cho `utils/alert_bot.py`:**
-- **Python library**: `python-telegram-bot` hoặc `aiogram` (async)
-- **Alert types**: Trade opened, DD warning, killswitch triggered, retrain result
-- **Anti-patterns**: Không spam — consolidate messages, rate limit alerts
-- **Error handling**: Global error handler, graceful degradation nếu Telegram down
+**Khi nào dùng:** Mỗi khi commit + push code
+**Áp dụng cho ScalForex:**
+- Conventional commit messages: `feat:`, `fix:`, `test:`, `docs:`
+- Branch workflow: `sprint1-foundation` → merge → `sprint2-env` → merge
+- Phải commit đầy đủ trước khi merge vào main
+- Ghi nhật ký vào `DIARY.md` SAU mỗi merge
 
-**Alert format:**
-```
-🟢 TRADE OPENED
-Symbol: XAUUSD
-Direction: BUY
-Confidence: 0.72
-Lots: 0.05
-Entry: 2045.30
-SL: 2039.15 (-0.30%)
-TP: 2054.50 (RR: 1.5)
-Model: ensemble_v003
+---
+
+## 🔧 NHÓM 2: CONFIG & DATA (Sprint 1)
+
+### 5. `pydantic-models-py` ⭐ MỚI
+📁 `.agent/skills/skills/pydantic-models-py/SKILL.md`
+
+**Khi nào dùng:** Sprint 1 — viết `configs/validator.py`
+**Áp dụng cho ScalForex:**
+- Multi-model pattern: `TradingRulesConfig`, `SymbolConfig`, `TrainConfig`
+- Validate TRƯỚC KHI chạy: lot size, risk percentage, symbol names
+- Type coercion: YAML string → float/int tự động
+- **Safety-critical**: Sai config = mất tiền thật ($200)
+
+**Ví dụ cụ thể:**
+```python
+class TradingRules(BaseModel):
+    max_loss_per_trade_pct: float = Field(..., gt=0, le=0.05)  # max 5%
+    xauusd_fixed_lot: float = Field(0.01, gt=0)
+    xauusd_dynamic_threshold: float = Field(600.0, gt=0)
+    max_total_drawdown_pct: float = Field(0.50, gt=0, le=1.0)
+    max_open_positions: int = Field(2, ge=1, le=5)
 ```
 
 ---
 
-### 17. `error-handling-patterns`
+### 6. `polars`
+📁 `.agent/skills/skills/polars/SKILL.md`
+
+**Khi nào dùng:** Data pipeline, feature engineering, data loading
+**Áp dụng cho ScalForex:**
+- **Lazy evaluation** cho M5 data: `pl.scan_parquet()` → filter/select → `.collect()`
+- **Window functions**: `.over()` cho rolling calculations (relative volume, swing points)
+- **Parallel computation**: `with_columns()` compute 29 features đồng thời
+- **Parquet I/O**: Native, nhanh hơn CSV 5-10x
+- **Type safety**: Strict typing ngăn lỗi silent data corruption
+
+**Pattern cụ thể:**
+```python
+# Feature pipeline — lazy + parallel
+lf = pl.scan_parquet("data/XAUUSD_M5.parquet")
+features = lf.with_columns(
+    pl.col("close").pct_change().alias("log_return"),
+    pl.col("volume").rolling_mean(20).alias("relative_volume"),
+    # ... 29 features compute parallel
+).collect()
+```
+
+---
+
+### 7. `data-scientist`
+📁 `.agent/skills/skills/data-scientist/SKILL.md`
+
+**Khi nào dùng:** Feature engineering, data analysis, model evaluation
+**Áp dụng cho ScalForex:**
+- **Time series analysis**: Validate 29 SMC features có signal hay noise
+- **Feature selection**: SHAP/importance → loại features vô dụng
+- **Anomaly detection**: Detect missing bars, data gaps trong M5 data
+- **Financial analytics**: Volatility modeling, trend analysis cho 5 symbols
+- **All sessions**: Phân tích đặc điểm riêng session Á/Âu/Mỹ cho mỗi symbol
+
+---
+
+## 🧠 NHÓM 3: ML/AI & DEEP LEARNING (Sprint 3-5)
+
+### 8. `ml-engineer`
+📁 `.agent/skills/skills/ml-engineer/SKILL.md`
+
+**Khi nào dùng:** Sprint 3 (Neural Architecture), Sprint 4 (Training Pipeline)
+**Áp dụng cho ScalForex:**
+
+**PyTorch 2.x:**
+- `torch.compile` cho inference optimization → scalping cần nhanh
+- Mixed precision training (`torch.cuda.amp`) tiết kiệm GPU memory
+- Gradient checkpointing cho Transformer nếu memory tight
+
+**Model Evaluation:**
+- SHAP analysis — verify model không dựa vào noise
+- Temporal validation — KHÔNG random split cho time-series
+- Walk-forward testing cho out-of-sample backtest
+
+**Reinforcement Learning:**
+- SAC policy optimization cho continuous action space
+- Curriculum learning: progressive difficulty 4 stages
+- PER (Prioritized Experience Replay) cho sample efficiency
+
+---
+
+### 9. `mlops-engineer`
+📁 `.agent/skills/skills/mlops-engineer/SKILL.md`
+
+**Khi nào dùng:** Sprint 4 (Training Pipeline), Sprint 7 (Weekly Retrain)
+**Áp dụng cho ScalForex:**
+- **W&B integration**: Training monitoring (reward, PnL, DD per episode)
+- **Model versioning**: DVC cho data, custom registry cho model checkpoints
+- **Weekly retrain pipeline**: Validate new model → deploy/reject
+- **Cost monitoring**: GPU usage optimization (vốn $200, tiết kiệm cloud cost)
+
+---
+
+### 10. `python-performance-optimization` ⭐ MỚI
+📁 `.agent/skills/skills/python-performance-optimization/SKILL.md`
+
+**Khi nào dùng:** Khi inference chậm, training bottleneck, memory leak
+**Tại sao quan trọng cho Scalping:**
+- Scalping = tốc độ. Mỗi ms chậm = có thể miss entry hoặc worse fill
+- Inference pipeline: MT5 data → features → model → action phải < 500ms
+- Profiling tools: `cProfile`, `py-spy`, `memory_profiler`
+- Memory optimization: 5 symbols × 3 TFs running liên tục
+
+**Checkpoints cần profile:**
+```
+1. MT5 data fetch latency        → target < 50ms
+2. Feature computation (29 features) → target < 100ms
+3. Model inference (Transformer)    → target < 200ms
+4. Risk calc + order send         → target < 100ms
+---
+Total pipeline                    → target < 500ms
+```
+
+---
+
+## 📊 NHÓM 4: QUANTITATIVE FINANCE & TRADING (Sprint 2, 5-7)
+
+### 11. `quant-analyst`
+📁 `.agent/skills/skills/quant-analyst/SKILL.md`
+
+**Khi nào dùng:** Backtest, strategy evaluation, risk metrics
+**Áp dụng cho ScalForex:**
+- **Risk metrics**: Sharpe, Sortino, Max DD, Calmar, Profit Factor
+- **Robust backtesting**: Transaction costs, Exness spread model, slippage
+- **Risk-adjusted returns**: Gate: Sharpe > 0.8 trước khi paper trade
+- **All-session analysis**: So sánh hiệu quả AI across Asian/European/US sessions
+
+**Quy tắc đặc biệt:**
+```
+⚠️ KHÔNG dùng indicator truyền thống (RSI, ATR, Bollinger, MA)
+✅ Chỉ SMC + Volume + Price Action features
+⚠️ KHÔNG random train/test split — phải temporal split
+✅ Walk-forward analysis cho mọi backtest
+```
+
+---
+
+### 12. `backtesting-frameworks`
+📁 `.agent/skills/skills/backtesting-frameworks/SKILL.md`
+
+**Khi nào dùng:** Sprint 5 (Out-of-sample validation)
+**Áp dụng cho ScalForex:**
+- **Look-ahead bias**: Cross-Attention chỉ attend completed H1/H4 bars
+- **Survivorship bias**: Verify M5 data không missing bars
+- **Exness cost model**: Realistic spread (variable by session!) + commission
+- **Walk-forward analysis**: Train → validate → test temporal split
+- **Session-aware backtest**: Different spread profiles per session
+
+---
+
+### 13. `risk-metrics-calculation`
+📁 `.agent/skills/skills/risk-metrics-calculation/SKILL.md`
+
+**Khi nào dùng:** Quant Tearsheet, risk monitoring
+**Áp dụng cho ScalForex ($200 account):**
+- **VaR/CVaR**: Daily Value at Risk
+- **Sharpe/Sortino**: Gate metric (Sharpe > 0.8 required)
+- **Drawdown analysis**: Max DD tracking → killswitch tại 45%
+- **Position sizing**: XAUUSD fixed 0.01 lot vs 3% dynamic rule
+- **Risk limits**: 3%/trade, max DD 50%, max 2 positions
+
+---
+
+### 14. `risk-manager`
+📁 `.agent/skills/skills/risk-manager/SKILL.md`
+
+**Khi nào dùng:** Sprint 6-7 (Live risk management)
+**Áp dụng cho ScalForex:**
+- **R-multiple tracking**: 1R = max loss per trade (3% of $200 = $6)
+- **Expectancy**: (Win% × Avg Win) - (Loss% × Avg Loss) → phải > 0
+- **XAUUSD special rule**: Fixed 0.01 lot khi balance < $600
+- **Correlation**: Tránh BUY US30 + BUY USTEC cùng lúc (high correlation)
+- **Monte Carlo**: Stress test 1000 random sequences trên $200
+- **Session risk**: Monitor risk exposure across Asian→European→US transitions
+
+---
+
+## 🧪 NHÓM 5: TESTING & QUALITY (Mọi Sprint)
+
+### 15. `test-driven-development`
+📁 `.agent/skills/skills/test-driven-development/SKILL.md`
+
+**Khi nào dùng:** TRƯỚC KHI viết production code
+**Quy tắc — NGHIÊM NGẶT:**
+```
+RED   → Viết test fail trước
+GREEN → Viết code tối thiểu để pass
+REFACTOR → Clean up, giữ test green
+```
+
+**Áp dụng cụ thể:**
+- `test_risk_manager.py` → test XAUUSD lot rule TRƯỚC khi implement
+- `test_env.py` → test step/reset TRƯỚC khi viết `scalp_env.py`
+- `test_reward.py` → test scalping bonus TRƯỚC khi implement
+
+---
+
+### 16. `python-testing-patterns`
+📁 `.agent/skills/skills/python-testing-patterns/SKILL.md`
+
+**Khi nào dùng:** Test infrastructure, fixtures, mocking
+**Áp dụng cho ScalForex:**
+- **Fixtures**: `env_fixture` cho Gymnasium, `config_fixture` cho YAML
+- **Parametrize**: `@pytest.mark.parametrize("symbol", ["XAUUSD","ETHUSD","BTCUSD","US30","USTEC"])`
+- **Mocking**: Mock MT5 API cho unit test (không cần Exness thật)
+- **Property-based**: Hypothesis cho numeric edge cases (NaN, inf, extreme vol)
+
+---
+
+### 17. `debugging-strategies`
+📁 `.agent/skills/skills/debugging-strategies/SKILL.md`
+
+**Khi nào dùng:** Debug training, model sai, live execution issues
+**Áp dụng cho ScalForex:**
+- **SAC không converge** → check reward scale, action bounds, learning rate
+- **Model luôn HOLD** → check confidence distribution, threshold
+- **Live vs backtest mismatch** → check Exness spread model, slippage
+- **Crypto overnight issue** → check ETHUSD/BTCUSD session handling
+
+---
+
+## 🏗️ NHÓM 6: INFRASTRUCTURE & OPERATIONS (Sprint 6-7)
+
+### 18. `telegram-bot-builder`
+📁 `.agent/skills/skills/telegram-bot-builder/SKILL.md`
+
+**Khi nào dùng:** Sprint 6-7 — `utils/telegram_bot.py`
+**Áp dụng cho ScalForex:**
+- **Python lib**: `python-telegram-bot` hoặc `aiogram` (async)
+- **Alert types**: Trade opened, DD warning, killswitch, session change
+- **Anti-spam**: Consolidate alerts, rate limit, quality over quantity
+- **24/7**: Crypto alerts chạy cả cuối tuần
+
+**Alert format:**
+```
+🟢 SCALP OPENED
+Symbol: XAUUSD
+Direction: BUY
+Lot: 0.01 (fixed)
+Entry: 2045.30
+SL: 2039.15 (-$6.15)
+Session: European
+Pipeline: 342ms
+```
+
+---
+
+### 19. `error-handling-patterns`
 📁 `.agent/skills/skills/error-handling-patterns/SKILL.md`
 
-**Khi nào dùng:** Sprint 6-7 (Live execution resilience)
-**Áp dụng:**
-- **Circuit breaker**: MT5 connection fails → retry 3x → fallback → alert
-- **Graceful degradation**: Nếu 1 model trong ensemble fail → 2-model voting thay vì crash
-- **Retry patterns**: MT5 order execution retry với exponential backoff
-- **Error propagation**: Domain errors → clean error messages → Telegram alert
-- **Async error handling**: Watchdog catches dead processes
+**Khi nào dùng:** Sprint 6-7 — live execution resilience
+**Áp dụng cho ScalForex:**
+- **Circuit breaker**: MT5 disconnect → retry 3x → close positions → alert
+- **Graceful degradation**: 1 model fail → 2-model voting thay vì crash
+- **Retry**: MT5 order execution retry với exponential backoff
+- **24/7 resilience**: ETHUSD/BTCUSD bot phải chạy xuyên weekend
+
+---
+
+### 20. `docker-expert` ⭐ MỚI
+📁 `.agent/skills/skills/docker-expert/SKILL.md`
+
+**Khi nào dùng:** Sprint 6-7 — đóng gói trading bot
+**Áp dụng cho ScalForex:**
+- **Dockerfile**: Multi-stage build cho Python + PyTorch + MT5
+- **Docker Compose**: Bot + watchdog + Telegram alert service
+- **Health checks**: Monitor bot alive, MT5 connected
+- **Resource limits**: CPU/memory controls cho VPS nhỏ
+- **Auto-restart**: `restart: unless-stopped` cho 24/7 crypto trading
 
 ---
 
@@ -341,21 +370,25 @@ Model: ensemble_v003
 
 | Vấn đề | Skill để tham khảo |
 |---------|-------------------|
-| SAC không converge | `ml-engineer` (training optimization) |
-| Feature noise / overfitting | `data-scientist` (feature selection) + `quant-analyst` (out-of-sample) |
-| Memory leak khi training | `python-pro` (profiling) + `ml-engineer` (gradient checkpointing) |
-| Reward hacking | `quant-analyst` (robust backtest) + `test-driven-development` |
-| MT5 connection crash | `error-handling-patterns` (circuit breaker) + `debugging-strategies` |
-| Backtest vs live mismatch | `backtesting-frameworks` (look-ahead bias) + `risk-metrics-calculation` |
-| Config sai mất tiền | `python-pro` (Pydantic) + `clean-code` (meaningful names) |
-| Model rollback needed | `mlops-engineer` (model registry) + `risk-manager` |
-| Telegram alert spam | `telegram-bot-builder` (anti-patterns) |
+| SAC không converge | `ml-engineer` + `debugging-strategies` |
+| Feature noise / overfitting | `data-scientist` + `quant-analyst` |
+| Inference chậm (> 500ms) | `python-performance-optimization` |
+| Memory leak khi training | `python-performance-optimization` + `ml-engineer` |
+| Reward hacking | `quant-analyst` + `test-driven-development` |
+| MT5 connection crash | `error-handling-patterns` + `debugging-strategies` |
+| Backtest vs live mismatch | `backtesting-frameworks` + `risk-metrics-calculation` |
+| Config sai mất tiền | `pydantic-models-py` + `clean-code` |
+| XAUUSD lot rule bug | `risk-manager` + `test-driven-development` |
+| Model rollback needed | `mlops-engineer` + `risk-manager` |
+| Telegram alert spam | `telegram-bot-builder` |
+| Docker deploy fail | `docker-expert` |
 | Test coverage thấp | `test-driven-development` + `python-testing-patterns` |
+| Git workflow sai | `git-pushing` |
 
 ---
 
 ## 📂 ĐƯỜNG DẪN GỐC
 
-Tất cả skills gốc nằm tại: `.agent/skills/skills/<skill-name>/SKILL.md`
+Tất cả skills gốc: `.agent/skills/skills/<skill-name>/SKILL.md`
 
-Nhiều skill có thêm folder `resources/implementation-playbook.md` chứa ví dụ chi tiết. Khi cần deep dive, mở file đó.
+Nhiều skill có `resources/implementation-playbook.md` chứa ví dụ chi tiết — mở khi cần deep dive.
