@@ -158,6 +158,39 @@ Start: $200.00 → End: $199.87 | PnL: -$0.13 | DD: 0.2% | Trades: 11 | Steps: 2
 **Kết quả:** 125/125 tests PASS ✅ (45 S1 + 48 S2 + 32 S3) | No look-ahead leak ✅
 
 ---
+
+### 19/03/2026 — Sprint 4: Training Pipeline & Baseline MLP ✅
+
+**Branch:** `sprint4-training-pipeline` → merged to `main`
+**Người thực hiện:** AI Dev (lệnh từ Tech Lead Gem)
+**Phần cứng:** Dual Xeon 56t + 96GB RAM + GTX 750 Ti (NO GPU used — CPU only)
+
+**Thay đổi:**
+| File | Hành động | Mô tả |
+|------|-----------|-------|
+| `training/per_buffer.py` | Tạo mới | PER buffer 200K cap, SumTree, CPU RAM (~2.6GB), IS weights |
+| `training/curriculum.py` | Tạo mới | 4 stages: kindergarten→university, auto-advance by global_step |
+| `training/trainer.py` | Tạo mới | SAC trainer: twin critics, auto entropy, soft update, checkpoint |
+| `training/vec_env_factory.py` | Tạo mới | SubprocVecEnv factory (30-40 parallel envs cho Dual Xeon) |
+| `scripts/train_baseline.py` | Tạo mới | Baseline MLP 200K steps training script |
+
+**📊 Baseline MLP Benchmark Results:**
+```
+Total Steps:    200,000
+Total Time:     48.0 min (trên CPU)
+Speed:          69-116 sps (giảm dần khi PER buffer đầy)
+Final Avg PnL:  $-0.31
+Final Trades:   34 trades/eval
+Episodes:       103
+AvgReward:      -17,989 (cải thiện 12% từ -20,593)
+Alpha (SAC):    0.040
+```
+
+**Nhận xét:** Agent đã học được cách trade (~30 trades/eval) và PnL gần breakeven. Reward cải thiện 12% qua 200K steps. Không dùng GPU — hoàn toàn trên CPU Dual Xeon.
+
+**Kết quả:** 125/125 tests PASS ✅ | Baseline MLP trained ✅ | Checkpoint saved ✅
+
+---
 TEMPLATE — Copy block dưới đây khi ghi nhật ký mới:
 
 ### DD/MM/YYYY — Tiêu đề ngắn
