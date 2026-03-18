@@ -71,7 +71,37 @@
 
 ---
 
-<!-- 
+### 19/03/2026 — Refactor Sprint 1: Performance & Zero Hardcode ✅
+
+**Branch:** `refactor/sprint1-optimize` → merged to `main`
+**Người thực hiện:** AI Dev (yêu cầu từ Tech Lead Gem)
+
+**Thay đổi:**
+| File | Hành động | Mô tả |
+|------|-----------|-------|
+| `data_engine/feature_builder.py` | Rewrite | Thêm `IncrementalFeatureBuilder` (stateful, cached swing state), Polars LazyFrame pipeline, all params từ config |
+| `configs/validator.py` | Sửa lớn | Thêm `SessionHoursConfig` (cross-validation overlap), mở rộng `FeatureSettings` (rolling windows, thresholds, session hours), siết `max_loss_per_trade_pct` ≤ 5% |
+| `configs/symbols.yaml` | Sửa | Extract toàn bộ hardcoded values ra YAML: `volume_rolling_window`, `climax_volume_threshold`, `pin_bar_wick_ratio`, `swing_lookback`, `liquidity_window`, session hours |
+| `tests/test_config.py` | Rewrite | 19 tests (+5 mới): session overlap, 5% cap, feature params loading |
+| `tests/test_features.py` | Rewrite | 18 tests (+8 mới): IncrementalBuilder, config-driven build, latency benchmarks |
+
+**Latency Benchmark (1000 bars M5):**
+| Metric | Kết quả | Target |
+|--------|---------|--------|
+| Batch build 1000 bars | **29.2ms** | < 200ms ✅ |
+| Incremental 1000 updates | **15.4ms** (0.015ms/candle) | < 50ms ✅ |
+
+**Coverage:**
+| Module | Coverage |
+|--------|----------|
+| `validator.py` | 96% |
+| `feature_builder.py` | 97% |
+| `normalizer.py` | 96% |
+| **TOTAL** | **84%** |
+
+**Kết quả:** 45/45 tests PASS ✅
+
+---
 TEMPLATE — Copy block dưới đây khi ghi nhật ký mới:
 
 ### DD/MM/YYYY — Tiêu đề ngắn
