@@ -16,11 +16,11 @@ sac:
   actor_hidden: [256, 256]
   critic_hidden: [256, 256]
 
-  # Action space (Phase 1: 2D)
-  action_dim: 2                      # [confidence, risk_fraction]
+  # Action space (Phase 1: 2D — mapped from [-1,1])
+  action_dim: 2                      # [direction_confidence, risk_fraction]
   action_bounds:
-    confidence: [-1.0, 1.0]          # <0 = SELL, >0 = BUY
-    risk_fraction: [0.1, 1.0]        # Fraction of max risk
+    direction: [-1.0, 1.0]           # <-0.3 SELL, >0.3 BUY, else HOLD
+    risk_fraction: [-1.0, 1.0]       # Mapped to [0, 1] via (x+1)/2
 
 # Transformer encoder
 transformer:
@@ -72,18 +72,25 @@ curriculum:
       regimes: ["all"]
       use_augmentation: true
 
-# Reward weights
+# Reward configuration — Baseline weights from Tech Lead (Gem)
 reward:
-  pnl_weight: 1.0
-  shaping_weight: 0.05
+  # Scalp timing
   scalp_bonus_fast: 0.5              # Close < 6 bars (30 min) with profit
   scalp_bonus_medium: 0.2            # Close < 30 bars (2.5h) with profit
-  hold_penalty_rate: 0.01
-  dd_penalty_alpha: 2.0
-  dd_penalty_beta: 3.0
-  overtrade_penalty: 0.3
-  rr_bonus_weight: 0.2
   max_trades_per_day: 10
+
+  # Reward weights (w_*)
+  w_pnl: 1.0                        # Realized PnL giữ nguyên
+  w_shaping: 0.05                    # Unrealized PnL dẫn đường nhẹ
+  w_scalp_bonus: 1.0                 # Thưởng đóng lệnh nhanh có lời
+  w_rr_bonus: 0.8                    # Risk/Reward (0.8 chống gồng lời quá mức)
+  w_cost: 1.5                        # ×1.5 chi phí thật — ép setup nét với $200
+  w_hold_penalty: 1.2                # ×1.2 phạt ôm lệnh (chống swing trading)
+  w_overtrade: 2.0                   # ×2 phạt spam lệnh — kỷ luật cực gắt
+
+  # Drawdown penalty (exponential)
+  dd_penalty_alpha: 1.0              # Hệ số gốc hàm mũ
+  dd_penalty_beta: 5.0               # DD sát 50% → điểm trừ bùng nổ
 
 # Training
 training:

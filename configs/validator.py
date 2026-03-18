@@ -267,18 +267,25 @@ class CurriculumConfig(BaseModel):
 
 
 class RewardConfig(BaseModel):
-    """Scalping-optimized reward weights."""
+    """Scalping reward weights — baseline from Tech Lead (Gem)."""
 
-    pnl_weight: float = Field(1.0, ge=0)
-    shaping_weight: float = Field(0.05, ge=0)
+    # Scalp timing
     scalp_bonus_fast: float = Field(0.5, ge=0)
     scalp_bonus_medium: float = Field(0.2, ge=0)
-    hold_penalty_rate: float = Field(0.01, ge=0)
-    dd_penalty_alpha: float = Field(2.0, ge=0)
-    dd_penalty_beta: float = Field(3.0, ge=0)
-    overtrade_penalty: float = Field(0.3, ge=0)
-    rr_bonus_weight: float = Field(0.2, ge=0)
     max_trades_per_day: int = Field(10, ge=1)
+
+    # Reward weights
+    w_pnl: float = Field(1.0, ge=0)
+    w_shaping: float = Field(0.05, ge=0)
+    w_scalp_bonus: float = Field(1.0, ge=0)
+    w_rr_bonus: float = Field(0.8, ge=0)
+    w_cost: float = Field(1.5, ge=0)
+    w_hold_penalty: float = Field(1.2, ge=0)
+    w_overtrade: float = Field(2.0, ge=0)
+
+    # Drawdown penalty (exponential)
+    dd_penalty_alpha: float = Field(1.0, ge=0)
+    dd_penalty_beta: float = Field(5.0, ge=0)
 
 
 class TrainingSettings(BaseModel):
