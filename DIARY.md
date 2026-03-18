@@ -132,6 +132,32 @@ Start: $200.00 → End: $199.87 | PnL: -$0.13 | DD: 0.2% | Trades: 11 | Steps: 2
 **Kết quả:** 93/93 tests PASS ✅ (45 Sprint 1 + 48 Sprint 2) | gymnasium env_checker PASS ✅
 
 ---
+
+### 19/03/2026 — Sprint 3: Neural Architecture & DRL Policy ✅
+
+**Branch:** `sprint3-neural-arch` → merged to `main`
+**Người thực hiện:** AI Dev (lệnh từ Tech Lead Gem)
+**Phương pháp:** TDD (test trước, code sau)
+
+**Thay đổi:**
+| File | Hành động | Mô tả |
+|------|-----------|-------|
+| `models/transformer_encoder.py` | Tạo mới | Self-Attention encoder + Causal Mask + Sinusoidal PE, Pre-LN, batch_first |
+| `models/cross_attention_mtf.py` | Tạo mới | M5→H1/H4 cross-attention + timestamp-based causal mask chống look-ahead |
+| `models/regime_detector.py` | Tạo mới | Learnable MLP (3 regimes: trending/ranging/volatile), softmax output |
+| `agents/sac_policy.py` | Tạo mới | SAC: tanh-squashed Gaussian actor + twin Q-critics + reparameterization |
+| `agents/action_gating.py` | Tạo mới | Confidence gating: \|c\| < 0.3 → HOLD (chống overtrade) |
+| `tests/test_transformer.py` | Tạo mới | 11 tests: shapes, causal mask, **NO-LOOKAHEAD test**, gradient flow, latency |
+| `tests/test_cross_attention.py` | Tạo mới | 5 tests: shapes, **causal mask prevents future HTF access**, gradient flow |
+| `tests/test_sac_policy.py` | Tạo mới | 10 tests: actor/critic shapes, action range, deterministic, gating |
+| `tests/test_regime_detector.py` | Tạo mới | 7 tests: probabilities, embedding, cross-entropy trainability |
+
+**Bug phát hiện & fix:**
+- Causal mask cross-attention dùng `c >= q` (block same-time HTF bars) → sửa thành `c > q` (allow completed bars). Test `test_no_lookahead` detect ra ngay.
+
+**Kết quả:** 125/125 tests PASS ✅ (45 S1 + 48 S2 + 32 S3) | No look-ahead leak ✅
+
+---
 TEMPLATE — Copy block dưới đây khi ghi nhật ký mới:
 
 ### DD/MM/YYYY — Tiêu đề ngắn
