@@ -67,8 +67,28 @@ timeframes:
     - "H1"
     - "H4"
 
-# Feature pipeline
+# Feature pipeline — ZERO HARDCODE: all params here
 features:
   lookback_window: 60                # 60 bars = 5 hours (M5)
   total_features: 29
   normalize: true                    # Welford's running normalizer
+  clip_range: 5.0                    # Normalizer z-score clip
+
+  # Rolling window sizes
+  volume_rolling_window: 20          # SMA window cho relative_volume
+  swing_lookback: 10                 # Rolling window cho trend_direction
+  liquidity_window: 20               # Rolling window cho liquidity pools
+
+  # Thresholds
+  climax_volume_threshold: 2.5       # volume > N× average = climax
+  pin_bar_wick_ratio: 2.0            # wick > N× body = pin bar
+
+  # Session hours (UTC)
+  sessions:
+    asian_start: 0
+    asian_end: 8
+    european_start: 8
+    european_end: 15
+    us_start: 15
+    us_end: 22
+

@@ -21,8 +21,8 @@ class RiskConfig(BaseModel):
     """Risk management parameters."""
 
     max_loss_per_trade_pct: float = Field(
-        ..., gt=0, le=0.10,
-        description="Max loss per trade as fraction of balance (e.g. 0.03 = 3%)",
+        ..., gt=0, le=0.05,
+        description="Max loss per trade as fraction of balance (e.g. 0.03 = 3%, max 5%)",
     )
     max_total_drawdown_pct: float = Field(
         ..., gt=0, le=1.0,
@@ -118,12 +118,57 @@ class TimeframeConfig(BaseModel):
     context: list[str] = ["H1", "H4"]
 
 
+class SessionHoursConfig(BaseModel):
+    """Session time boundaries (UTC hours). Validated for no overlap."""
+
+    asian_start: int = Field(0, ge=0, le=23)
+    asian_end: int = Field(8, ge=0, le=23)
+    european_start: int = Field(8, ge=0, le=23)
+    european_end: int = Field(15, ge=0, le=23)
+    us_start: int = Field(15, ge=0, le=23)
+    us_end: int = Field(22, ge=0, le=23)
+
+    @model_validator(mode="after")
+    def sessions_no_overlap_and_ordered(self) -> "SessionHoursConfig":
+        """Validate sessions are ordered and don't overlap."""
+        if self.asian_start >= self.asian_end:
+            raise ValueError("asian_start must be < asian_end")
+        if self.european_start >= self.european_end:
+            raise ValueError("european_start must be < european_end")
+        if self.us_start >= self.us_end:
+            raise ValueError("us_start must be < us_end")
+        if self.asian_end > self.european_start:
+            raise ValueError(
+                f"Asian session end ({self.asian_end}) overlaps "
+                f"European start ({self.european_start})"
+            )
+        if self.european_end > self.us_start:
+            raise ValueError(
+                f"European session end ({self.european_end}) overlaps "
+                f"US start ({self.us_start})"
+            )
+        return self
+
+
 class FeatureSettings(BaseModel):
-    """Feature pipeline settings."""
+    """Feature pipeline settings — ZERO HARDCODE: all params from YAML."""
 
     lookback_window: int = Field(60, ge=10, le=500)
     total_features: int = Field(29, ge=1)
     normalize: bool = True
+    clip_range: float = Field(5.0, gt=0, le=20.0)
+
+    # Rolling window sizes
+    volume_rolling_window: int = Field(20, ge=5, le=200)
+    swing_lookback: int = Field(10, ge=3, le=100)
+    liquidity_window: int = Field(20, ge=5, le=200)
+
+    # Thresholds
+    climax_volume_threshold: float = Field(2.5, gt=1.0, le=10.0)
+    pin_bar_wick_ratio: float = Field(2.0, gt=1.0, le=5.0)
+
+    # Session hours
+    sessions: SessionHoursConfig = SessionHoursConfig()
 
 
 class SymbolsConfig(BaseModel):
