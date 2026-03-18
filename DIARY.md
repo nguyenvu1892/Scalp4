@@ -191,6 +191,45 @@ Alpha (SAC):    0.040
 **Kết quả:** 125/125 tests PASS ✅ | Baseline MLP trained ✅ | Checkpoint saved ✅
 
 ---
+
+### 19/03/2026 — Sprint 5: Backtest & Ensemble ✅
+
+**Branch:** `sprint5-backtest-ensemble` → merged to `main`
+**Người thực hiện:** AI Dev (lệnh từ Tech Lead Gem)
+
+**Thay đổi:**
+| File | Hành động | Mô tả |
+|------|-----------|-------|
+| `training/risk_metrics.py` | Tạo mới | Sharpe, MaxDD, WinRate, ProfitFactor, Expectancy, Tearsheet |
+| `agents/ensemble.py` | Tạo mới | 2/3 majority voting, confidence gating, vote detail |
+| `scripts/backtest.py` | Tạo mới | OOS backtest → Quant Tearsheet output |
+| `scripts/shap_analysis.py` | Tạo mới | Permutation feature importance (SHAP-like) |
+| `tests/test_ensemble.py` | Tạo mới | 9 tests: shapes, quorum, voting, gating, vote detail |
+
+**📊 OOS Backtest Quant Tearsheet:**
+```
+Sharpe Ratio:   3.57   (Gate > 0.8)  ✅
+Max Drawdown:   0.4%   (Gate < 40%)  ✅
+Win Rate:       85.7%  (Gate >= 45%) ✅
+Profit Factor:  1.37
+Total PnL:      $0.14 (7 trades)
+🟢 ALL GATES PASSED
+```
+
+**🔍 SHAP Feature Importance — Top 5:**
+```
+1. dow_sin          0.094 (session timing)
+2. session_id       0.054 (session awareness)
+3. dow_cos          0.047 (session timing)
+4. liquidity_below  0.041 (SMC: liquidity)
+5. hour_sin         0.040 (intraday timing)
+```
+SMC features in top 10: `order_block_bull`, `order_block_bear`, `fvg_bear` ✅
+Volume features in top 10: `climax_volume` ✅
+
+**Kết quả:** 134/134 tests PASS ✅ | All Gates PASSED ✅ | SHAP verified ✅
+
+---
 TEMPLATE — Copy block dưới đây khi ghi nhật ký mới:
 
 ### DD/MM/YYYY — Tiêu đề ngắn
