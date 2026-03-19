@@ -91,9 +91,35 @@ class MT5Bridge:
     def connect(self) -> bool:
         """Connect to MT5 with exponential backoff retry.
 
+        SAFETY: mt5_path is MANDATORY. Without it, mt5.initialize()
+        could connect to a LIVE terminal running in parallel.
+
         Returns:
             True if connected successfully.
         """
+        # ═══════════════════════════════════════════════════════════
+        # ⚠️ CRITICAL SAFETY CHECK — DO NOT REMOVE ⚠️
+        # Máy chạy song song MT5 Live + Demo.
+        # Nếu gọi mt5.initialize() KHÔNG CÓ path, nó sẽ bắt vào
+        # Terminal ĐẦU TIÊN tìm thấy — có thể là Live → cháy TK!
+        # ═══════════════════════════════════════════════════════════
+        if not self.mt5_path:
+            log.critical(
+                "🚨🚨🚨 MT5_PATH IS EMPTY — REFUSING TO CONNECT! 🚨🚨🚨\n"
+                "  Máy đang chạy song song Live + Demo MT5.\n"
+                "  Nếu gọi mt5.initialize() không có path, có thể\n"
+                "  BẮT VÀO TERMINAL LIVE → TRADE NHẦM TIỀN THẬT!\n"
+                "  Set mt5_path trong configs/trading_rules.yaml hoặc env MT5_PATH."
+            )
+            return False
+
+        if not self.login:
+            log.critical(
+                "🚨 MT5_LOGIN is empty — refusing to connect. "
+                "Set MT5_LOGIN env var or pass login parameter."
+            )
+            return False
+
         try:
             import MetaTrader5 as mt5
             self._mt5 = mt5
@@ -106,33 +132,34 @@ class MT5Bridge:
 
         for attempt in range(1, self.max_retries + 1):
             log.info(f"MT5 connect attempt {attempt}/{self.max_retries}...")
+            log.info(f"  path={self.mt5_path}")
+            log.info(f"  login={self.login}, server={self.server}")
 
-            init_kwargs = {}
-            if self.mt5_path:
-                init_kwargs["path"] = self.mt5_path
-            if self.login:
-                init_kwargs["login"] = self.login
-                init_kwargs["password"] = self.password
-                init_kwargs["server"] = self.server
+            # ALWAYS pass path + login + server — NEVER leave empty
+            if not self._mt5.initialize(
+                path=self.mt5_path,
+                login=self.login,
+                password=self.password,
+                server=self.server,
+            ):
+                error = self._mt5.last_error()
+                log.warning(f"MT5 connect failed: {error}")
 
-            if self._mt5.initialize(**init_kwargs):
-                account_info = self._mt5.account_info()
-                if account_info is not None:
-                    self._connected = True
-                    log.info(
-                        f"MT5 connected: Account #{account_info.login} "
-                        f"({account_info.server}) "
-                        f"Balance: ${account_info.balance:.2f}"
-                    )
-                    return True
+                if attempt < self.max_retries:
+                    delay = self.base_delay * (2 ** (attempt - 1))
+                    log.info(f"Retrying in {delay:.1f}s (exponential backoff)...")
+                    time.sleep(delay)
+                continue
 
-            error = self._mt5.last_error()
-            log.warning(f"MT5 connect failed: {error}")
-
-            if attempt < self.max_retries:
-                delay = self.base_delay * (2 ** (attempt - 1))
-                log.info(f"Retrying in {delay:.1f}s (exponential backoff)...")
-                time.sleep(delay)
+            account_info = self._mt5.account_info()
+            if account_info is not None:
+                self._connected = True
+                log.info(
+                    f"MT5 connected: Account #{account_info.login} "
+                    f"({account_info.server}) "
+                    f"Balance: ${account_info.balance:.2f}"
+                )
+                return True
 
         log.error(f"MT5 connection failed after {self.max_retries} attempts")
         return False

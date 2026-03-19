@@ -28,3 +28,11 @@ account:
   starting_balance: 200.0            # Vốn ban đầu $200
   broker: "Exness"
   platform: "MT5"
+
+# ⚠️ CRITICAL: Đường dẫn ĐẾN ĐÚNG bản MT5 Demo
+# KHÔNG BAO GIỜ để trống — nếu để trống, mt5.initialize() sẽ
+# bắt vào Terminal Live đang mở → TRADE NHẦM TIỀN THẬT!
+mt5_connection:
+  mt5_path: "C:\\Program Files\\MetaTrader 5 EXNESS - Demo\\terminal64.exe"
+  server: "Exness-MT5Trial9"         # Server Demo — kiểm tra kỹ tên server
+
