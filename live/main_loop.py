@@ -46,16 +46,16 @@ HIDDEN_DIMS = [512, 256]  # Must match train.py architecture
 HEARTBEAT_PATH = Path("logs/heartbeat.txt")
 TRADE_LOG_PATH = Path("logs/trades.jsonl")
 
-# Multi-symbol scan — spread risk across instruments
-SYMBOLS = ["XAUUSD", "EURUSD", "GBPUSD", "BTCUSD", "ETHUSD"]
+# Multi-symbol scan (MASTER_PLAN: Gold + Crypto + US Indices, NO pure Forex)
+SYMBOLS = ["XAUUSD", "ETHUSD", "BTCUSD", "US30", "USTEC"]
 
 # SL/TP in points per symbol (point size differs)
 SYMBOL_CONFIG = {
     "XAUUSD": {"sl_pts": 5000, "tp_pts": 5000, "lot": 0.01},    # $50
-    "EURUSD": {"sl_pts": 200,  "tp_pts": 200,  "lot": 0.01},    # 20 pips
-    "GBPUSD": {"sl_pts": 200,  "tp_pts": 200,  "lot": 0.01},    # 20 pips
-    "BTCUSD": {"sl_pts": 50000,"tp_pts": 50000,"lot": 0.01},    # $500
     "ETHUSD": {"sl_pts": 5000, "tp_pts": 5000, "lot": 0.01},    # $50
+    "BTCUSD": {"sl_pts": 50000,"tp_pts": 50000,"lot": 0.01},    # $500
+    "US30":   {"sl_pts": 500,  "tp_pts": 500,  "lot": 0.01},    # 50 pts
+    "USTEC":  {"sl_pts": 500,  "tp_pts": 500,  "lot": 0.01},    # 50 pts
 }
 
 # DISCIPLINE: Raised from 0.3 to 0.65 — stop overtrading!
