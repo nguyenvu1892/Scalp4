@@ -6,6 +6,7 @@ NO mixed precision (Maxwell arch). Small batch. CPU-side PER buffer.
 
 from __future__ import annotations
 
+import copy
 import time
 from pathlib import Path
 from typing import Any, Optional
@@ -79,11 +80,12 @@ class SACTrainer:
         self.gamma = gamma
         self.tau = tau
 
-        # Target network (for stable Q-value estimation)
-        self.target_policy = SACPolicy(
-            obs_dim=obs_dim, action_dim=action_dim,
-        ).to(self.device)
-        self.target_policy.load_state_dict(self.policy.state_dict())
+        # Target network (deep copy — MUST match policy architecture exactly)
+        self.target_policy = copy.deepcopy(self.policy)
+        self.target_policy.to(self.device)
+        # Freeze target — only updated via soft update
+        for p in self.target_policy.parameters():
+            p.requires_grad = False
 
         # Optimizers
         self.actor_optimizer = optim.Adam(
@@ -230,7 +232,7 @@ class SACTrainer:
                 self.tau * param.data + (1 - self.tau) * target_param.data
             )
 
-    def save_checkpoint(self, path: Path) -> None:
+    def save_checkpoint(self, path: Path, global_step: int | None = None) -> None:
         """Save training checkpoint."""
         path.parent.mkdir(parents=True, exist_ok=True)
         torch.save({
@@ -240,7 +242,7 @@ class SACTrainer:
             "critic_opt": self.critic_optimizer.state_dict(),
             "alpha_opt": self.alpha_optimizer.state_dict(),
             "log_alpha": self.log_alpha.data,
-            "global_step": self.global_step,
+            "global_step": global_step if global_step is not None else self.global_step,
             "update_count": self.update_count,
         }, path)
         log.info(f"Checkpoint saved: {path}")
