@@ -15,6 +15,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+import sys
+from pathlib import Path as _Path
+sys.path.insert(0, str(_Path(__file__).parent.parent))
+
 from utils.logger import setup_logger
 
 log = setup_logger("live.watchdog")

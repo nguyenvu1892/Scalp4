@@ -38,17 +38,28 @@ log = setup_logger("live.main_loop")
 
 # ── Constants ──
 LOOKBACK = 60
-N_FEATURES = 27
-OBS_DIM = LOOKBACK * N_FEATURES
+N_FEATURES = 29          # 27 base + h1_trend + h4_trend
+OBS_DIM = LOOKBACK * N_FEATURES  # 1740
 CHECKPOINT_PATH = Path("checkpoints/transformer/best.pt")
 MODEL_NAME = "Transformer SAC"
 HIDDEN_DIMS = [512, 256]  # Must match train.py architecture
 HEARTBEAT_PATH = Path("logs/heartbeat.txt")
 TRADE_LOG_PATH = Path("logs/trades.jsonl")
-SYMBOL = "XAUUSD"
-SL_POINTS = 5000   # $50 for XAUUSD (point = 0.01)
-TP_POINTS = 5000   # $50 for XAUUSD
-CONFIDENCE_THRESHOLD = 0.3
+
+# Multi-symbol scan — spread risk across instruments
+SYMBOLS = ["XAUUSD", "EURUSD", "GBPUSD", "BTCUSD", "ETHUSD"]
+
+# SL/TP in points per symbol (point size differs)
+SYMBOL_CONFIG = {
+    "XAUUSD": {"sl_pts": 5000, "tp_pts": 5000, "lot": 0.01},    # $50
+    "EURUSD": {"sl_pts": 200,  "tp_pts": 200,  "lot": 0.01},    # 20 pips
+    "GBPUSD": {"sl_pts": 200,  "tp_pts": 200,  "lot": 0.01},    # 20 pips
+    "BTCUSD": {"sl_pts": 50000,"tp_pts": 50000,"lot": 0.01},    # $500
+    "ETHUSD": {"sl_pts": 5000, "tp_pts": 5000, "lot": 0.01},    # $50
+}
+
+# DISCIPLINE: Raised from 0.3 to 0.65 — stop overtrading!
+CONFIDENCE_THRESHOLD = 0.65
 
 
 class TradingBot:
@@ -86,11 +97,13 @@ class TradingBot:
         self._init_defense()
         self._init_feature_engine()
 
-        # State
-        self._feature_buffer: list[np.ndarray] = []
+        # State — per-symbol feature builders
+        self._builders: dict[str, object] = {}     # symbol → IncrementalFeatureBuilder
+        self._normalizers: dict[str, object] = {}  # symbol → WelfordNormalizer
+        self._buffers: dict[str, list] = {}         # symbol → feature buffer
+        self._last_candle: dict[str, datetime | None] = {}
         self._running = False
         self._cycle_count = 0
-        self._last_candle_time: datetime | None = None
 
     def _init_mt5(self) -> None:
         self.mt5 = MT5Bridge(
@@ -144,8 +157,12 @@ class TradingBot:
             cfg = load_symbols().features
         except Exception:
             cfg = FeatureSettings()
-        self.feature_builder = IncrementalFeatureBuilder(config=cfg)
-        self.normalizer = WelfordNormalizer(n_features=N_FEATURES)
+
+        for sym in SYMBOLS:
+            self._builders[sym] = IncrementalFeatureBuilder(config=cfg)
+            self._normalizers[sym] = WelfordNormalizer(n_features=N_FEATURES)
+            self._buffers[sym] = []
+            self._last_candle[sym] = None
 
     # ── Main Loop ──
 
@@ -153,7 +170,8 @@ class TradingBot:
         """Start the 24/7 trading loop."""
         log.info("=" * 60)
         log.info("SCALFOREX — PAPER TRADING BOT STARTING")
-        log.info(f"Symbol: {SYMBOL} | Model: {MODEL_NAME}")
+        log.info(f"Symbols: {', '.join(SYMBOLS)} | Model: {MODEL_NAME}")
+        log.info(f"Confidence: {CONFIDENCE_THRESHOLD} | Features: {N_FEATURES}")
         log.info("=" * 60)
 
         # Connect MT5
@@ -170,8 +188,9 @@ class TradingBot:
         self.telegram.send_message(
             f"🤖 <b>ScalForex Bot STARTED</b>\n"
             f"━━━━━━━━━━━━━━━\n"
-            f"📊 Symbol: {SYMBOL}\n"
+            f"📊 Symbols: {', '.join(SYMBOLS)}\n"
             f"🧠 Model: {MODEL_NAME}\n"
+            f"🎯 Confidence: {CONFIDENCE_THRESHOLD}\n"
             f"💰 Balance: ${info.get('balance', 0):.2f}\n"
             f"🛡️ Killswitch: DD > 45%\n"
             f"⏰ {datetime.now().strftime('%H:%M:%S')}"
@@ -197,44 +216,72 @@ class TradingBot:
         self._shutdown()
 
     def _warm_up(self) -> None:
-        """Pull recent M5 bars to warm up feature builder + normalizer."""
-        log.info(f"Warming up with {LOOKBACK + 10} historical M5 bars...")
-
+        """Pull recent M5 bars for ALL symbols to warm up."""
         import MetaTrader5 as mt5
-        rates = mt5.copy_rates_from_pos(SYMBOL, mt5.TIMEFRAME_M5, 0, LOOKBACK + 10)
+        for sym in SYMBOLS:
+            log.info(f"Warming up {sym}...")
+            rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_M5, 0, LOOKBACK + 10)
+            if rates is None or len(rates) == 0:
+                log.warning(f"No M5 data for {sym} — skipping")
+                continue
 
-        if rates is None or len(rates) == 0:
-            log.warning("No historical data — feature builder starts cold")
-            return
+            builder = self._builders[sym]
+            normalizer = self._normalizers[sym]
+            buf = self._buffers[sym]
 
-        for r in rates:
-            candle = {
-                "time": datetime.fromtimestamp(r["time"]),
-                "open": float(r["open"]),
-                "high": float(r["high"]),
-                "low": float(r["low"]),
-                "close": float(r["close"]),
-                "volume": float(r["tick_volume"]),
-            }
-            features = self.feature_builder.update(candle)
-            feat_vec = np.array([features[k] for k in FEATURE_COLUMNS[:N_FEATURES]], dtype=np.float32)
-            self.normalizer.update(feat_vec.reshape(1, -1))
-            self._feature_buffer.append(feat_vec)
+            # Also get H1/H4 trend for each bar
+            h1_rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_H1, 0, 20)
+            h4_rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_H4, 0, 10)
+            h1_trend = self._compute_tf_trend(h1_rates)
+            h4_trend = self._compute_tf_trend(h4_rates)
 
-        # Keep only LOOKBACK
-        self._feature_buffer = self._feature_buffer[-LOOKBACK:]
-        self._last_candle_time = datetime.fromtimestamp(rates[-1]["time"])
-        log.info(f"Warmed up: {len(rates)} bars, buffer={len(self._feature_buffer)}")
+            for r in rates:
+                candle = {
+                    "time": datetime.fromtimestamp(r["time"]),
+                    "open": float(r["open"]),
+                    "high": float(r["high"]),
+                    "low": float(r["low"]),
+                    "close": float(r["close"]),
+                    "volume": float(r["tick_volume"]),
+                }
+                features = builder.update(candle)
+                feat_vec = self._features_to_vec(features, h1_trend, h4_trend)
+                normalizer.update(feat_vec.reshape(1, -1))
+                buf.append(feat_vec)
+
+            self._buffers[sym] = buf[-LOOKBACK:]
+            self._last_candle[sym] = datetime.fromtimestamp(rates[-1]["time"])
+            log.info(f"  {sym}: {len(rates)} bars, buffer={len(self._buffers[sym])}")
+
+    @staticmethod
+    def _compute_tf_trend(rates) -> float:
+        """Compute trend from higher TF rates: +1 up, -1 down, 0 flat."""
+        if rates is None or len(rates) < 3:
+            return 0.0
+        closes = [float(r["close"]) for r in rates[-5:]]
+        if closes[-1] > closes[0]:
+            return 1.0
+        elif closes[-1] < closes[0]:
+            return -1.0
+        return 0.0
+
+    @staticmethod
+    def _features_to_vec(
+        features: dict, h1_trend: float, h4_trend: float,
+    ) -> np.ndarray:
+        """Build 29-feature vector from feature dict + multi-TF trends."""
+        base = [features.get(k, 0.0) for k in FEATURE_COLUMNS[:27]]
+        base.append(h1_trend)
+        base.append(h4_trend)
+        return np.array(base, dtype=np.float32)
 
     def _cycle(self) -> None:
-        """One trading cycle: wait for new M5 candle, process, maybe trade."""
-        # Heartbeat
+        """One trading cycle: scan ALL symbols for signals."""
         self.watchdog.write_heartbeat()
 
         # Wait for next M5 candle close
         now = datetime.now()
-        # M5 alignment
-        next_m5 = now.replace(second=2, microsecond=0)  # 2s past for candle close
+        next_m5 = now.replace(second=2, microsecond=0)
         minutes_to_next = 5 - (now.minute % 5)
         if minutes_to_next == 5 and now.second >= 2:
             minutes_to_next = 5
@@ -245,25 +292,65 @@ class TradingBot:
         wait_secs = (next_m5 - now).total_seconds()
         if wait_secs > 0:
             log.debug(f"Waiting {wait_secs:.0f}s for next M5 candle...")
-            time.sleep(min(wait_secs, 30))  # Sleep in chunks for responsiveness
+            time.sleep(min(wait_secs, 30))
             if wait_secs > 30:
-                return  # Will re-enter cycle
+                return
 
-        # ── Pipeline Start ──
         t_start = time.perf_counter()
         self._cycle_count += 1
 
-        # Step 1: Pull latest M5 candle
+        # Killswitch check
+        account_info = self.mt5.get_account_info()
+        equity = account_info.get("equity", 200.0)
+        balance = account_info.get("balance", 200.0)
+        ks_result = self.killswitch.check_drawdown(equity)
+        if ks_result["triggered"]:
+            log.critical("KILLSWITCH TRIGGERED — stopping bot")
+            self._running = False
+            return
+
+        if self.risk_mgr:
+            self.risk_mgr.update_balance(balance)
+
+        positions = self.mt5.get_open_positions()
+        n_positions = len(positions)
+
         import MetaTrader5 as mt5
-        rates = mt5.copy_rates_from_pos(SYMBOL, mt5.TIMEFRAME_M5, 0, 1)
+
+        # Scan each symbol
+        for sym in SYMBOLS:
+            try:
+                self._process_symbol(sym, mt5, n_positions, balance)
+            except Exception as e:
+                log.error(f"Error processing {sym}: {e}")
+
+        t_pipeline = time.perf_counter() - t_start
+
+        # EOD check
+        self._check_eod()
+
+        # Periodic log
+        if self._cycle_count % 12 == 0:
+            log.info(
+                f"Cycle #{self._cycle_count} | "
+                f"Balance: ${balance:.2f} | Equity: ${equity:.2f} | "
+                f"DD: {ks_result['dd_pct']:.1%} | "
+                f"Positions: {n_positions} | "
+                f"Pipeline: {t_pipeline*1000:.0f}ms"
+            )
+
+    def _process_symbol(
+        self, sym: str, mt5, n_positions: int, balance: float,
+    ) -> None:
+        """Process one symbol: pull candle, compute features, maybe trade."""
+        rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_M5, 0, 1)
         if rates is None or len(rates) == 0:
-            log.warning("No M5 data received")
             return
 
         candle_time = datetime.fromtimestamp(rates[0]["time"])
-        if self._last_candle_time and candle_time <= self._last_candle_time:
-            return  # Same candle, skip
-        self._last_candle_time = candle_time
+        if self._last_candle.get(sym) and candle_time <= self._last_candle[sym]:
+            return  # Same candle
+        self._last_candle[sym] = candle_time
 
         candle = {
             "time": candle_time,
@@ -274,124 +361,83 @@ class TradingBot:
             "volume": float(rates[0]["tick_volume"]),
         }
 
-        # Step 2: Feature extraction (incremental)
-        features = self.feature_builder.update(candle)
-        feat_vec = np.array(
-            [features.get(k, 0.0) for k in FEATURE_COLUMNS[:N_FEATURES]],
-            dtype=np.float32,
-        )
-        self.normalizer.update(feat_vec.reshape(1, -1))
-        norm_vec = self.normalizer.normalize(feat_vec).astype(np.float32)
-        self._feature_buffer.append(norm_vec)
-        if len(self._feature_buffer) > LOOKBACK:
-            self._feature_buffer.pop(0)
+        # H1/H4 trend
+        h1_rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_H1, 0, 5)
+        h4_rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_H4, 0, 5)
+        h1_trend = self._compute_tf_trend(h1_rates)
+        h4_trend = self._compute_tf_trend(h4_rates)
 
-        # Step 3: Check killswitch
-        account_info = self.mt5.get_account_info()
-        equity = account_info.get("equity", 200.0)
-        balance = account_info.get("balance", 200.0)
-        ks_result = self.killswitch.check_drawdown(equity)
-        if ks_result["triggered"]:
-            log.critical("KILLSWITCH TRIGGERED — stopping bot")
-            self._running = False
+        # Features (29)
+        builder = self._builders[sym]
+        normalizer = self._normalizers[sym]
+        buf = self._buffers[sym]
+
+        features = builder.update(candle)
+        feat_vec = self._features_to_vec(features, h1_trend, h4_trend)
+        normalizer.update(feat_vec.reshape(1, -1))
+        norm_vec = normalizer.normalize(feat_vec).astype(np.float32)
+        buf.append(norm_vec)
+        if len(buf) > LOOKBACK:
+            buf.pop(0)
+        self._buffers[sym] = buf
+
+        if len(buf) < LOOKBACK:
             return
 
-        # Update risk manager balance
-        if self.risk_mgr:
-            self.risk_mgr.update_balance(balance)
+        # Build obs
+        obs = np.concatenate(buf[-LOOKBACK:]).astype(np.float32)
 
-        # Step 4: Build observation (need full lookback)
-        if len(self._feature_buffer) < LOOKBACK:
-            log.debug(f"Buffer filling: {len(self._feature_buffer)}/{LOOKBACK}")
-            return
-
-        obs = np.concatenate(self._feature_buffer[-LOOKBACK:]).astype(np.float32)
-
-        # Step 5: Model inference
+        # Inference
         obs_tensor = torch.from_numpy(obs).unsqueeze(0).to(self.device)
         with torch.no_grad():
             action = self.policy.deterministic_action(obs_tensor)
         action_np = action.cpu().numpy().squeeze(0)
 
-        # Step 6: Action Gating
+        # Action Gating (0.65 threshold!)
         gated_action = apply_action_gating(action_np, CONFIDENCE_THRESHOLD)
         confidence = float(gated_action[0])
         risk_fraction = float(gated_action[1])
 
-        t_pipeline = time.perf_counter() - t_start
+        if abs(confidence) < CONFIDENCE_THRESHOLD:
+            return  # HOLD
 
-        # Step 7: EOD check
-        if self.risk_mgr and hasattr(self, '_check_eod'):
-            self._check_eod()
+        # Position limit
+        if self.risk_mgr and not self.risk_mgr.can_open_position(n_positions):
+            return
 
-        # Step 8: Trade decision
-        positions = self.mt5.get_open_positions()
-        n_positions = len(positions)
+        side = OrderSide.BUY if confidence > 0 else OrderSide.SELL
+        cfg = SYMBOL_CONFIG.get(sym, {"sl_pts": 5000, "tp_pts": 5000, "lot": 0.01})
+        lot = cfg["lot"]
 
-        if abs(confidence) >= CONFIDENCE_THRESHOLD:
-            # Signal detected
-            side = OrderSide.BUY if confidence > 0 else OrderSide.SELL
+        result = self.mt5.send_market_order(
+            symbol=sym,
+            side=side,
+            lot=lot,
+            sl_points=cfg["sl_pts"],
+            tp_points=cfg["tp_pts"],
+            comment=f"ScalForex AI c={confidence:.2f}",
+        )
 
-            # Risk checks
-            can_open = True
-            if self.risk_mgr and not self.risk_mgr.can_open_position(n_positions):
-                can_open = False
-                log.info(f"Position limit reached ({n_positions})")
-
-            if can_open:
-                # Calculate lot
-                if self.risk_mgr:
-                    lot = self.risk_mgr.calculate_lot(
-                        SYMBOL, candle["close"], candle["close"] - 50, risk_fraction
-                    )
-                else:
-                    lot = 0.01
-
-                # Execute
-                result = self.mt5.send_market_order(
-                    symbol=SYMBOL,
-                    side=side,
-                    lot=lot,
-                    sl_points=SL_POINTS,
-                    tp_points=TP_POINTS,
-                    comment=f"ScalForex AI c={confidence:.2f}",
-                )
-
-                if result.success:
-                    # Log trade
-                    self._log_trade({
-                        "action": "OPEN",
-                        "ticket": result.ticket,
-                        "side": side.value,
-                        "lot": lot,
-                        "price": result.price,
-                        "sl": result.sl,
-                        "tp": result.tp,
-                        "confidence": confidence,
-                        "pipeline_ms": t_pipeline * 1000,
-                        "time": datetime.now().isoformat(),
-                    })
-
-                    # Telegram alert
-                    session = self._get_session()
-                    self.telegram.alert_trade_open(
-                        symbol=SYMBOL,
-                        side=side.value,
-                        lot=lot,
-                        entry=result.price,
-                        sl=result.sl,
-                        session=session,
-                        confidence=abs(confidence),
-                    )
-
-        # Periodic log
-        if self._cycle_count % 12 == 0:  # Every hour (12 × 5min)
-            log.info(
-                f"Cycle #{self._cycle_count} | "
-                f"Balance: ${balance:.2f} | Equity: ${equity:.2f} | "
-                f"DD: {ks_result['dd_pct']:.1%} | "
-                f"Positions: {n_positions} | "
-                f"Pipeline: {t_pipeline*1000:.0f}ms"
+        if result.success:
+            self._log_trade({
+                "action": "OPEN",
+                "ticket": result.ticket,
+                "symbol": sym,
+                "side": side.value,
+                "lot": lot,
+                "price": result.price,
+                "sl": result.sl,
+                "tp": result.tp,
+                "confidence": confidence,
+                "h1_trend": h1_trend,
+                "h4_trend": h4_trend,
+                "time": datetime.now().isoformat(),
+            })
+            session = self._get_session()
+            self.telegram.alert_trade_open(
+                symbol=sym, side=side.value, lot=lot,
+                entry=result.price, sl=result.sl,
+                session=session, confidence=abs(confidence),
             )
 
     def _check_eod(self) -> None:
