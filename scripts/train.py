@@ -22,6 +22,7 @@ import torch
 
 from agents.sac_policy import SACPolicy
 from environments.scalp_env import ScalpEnv
+from configs.validator import CurriculumConfig, CurriculumStage
 from training.curriculum import CurriculumManager
 from training.per_buffer import PrioritizedReplayBuffer
 from training.trainer import SACTrainer
@@ -217,8 +218,21 @@ def main() -> None:
     log.info("=" * 60)
 
     # ── Curriculum ──
-    stages = [int(s) for s in args.stages.split(",")]
-    curriculum = CurriculumManager(total_steps=args.steps)
+    stage_indices = [int(s) for s in args.stages.split(",")]
+    all_stages = [
+        CurriculumStage(name="kindergarten", steps=args.steps // 4, max_dd_pct=0.80,
+                        spread_mode="fixed", regimes=["trending"]),
+        CurriculumStage(name="elementary", steps=args.steps // 4, max_dd_pct=0.60,
+                        spread_mode="variable", regimes=["trending", "ranging"]),
+        CurriculumStage(name="high_school", steps=args.steps // 4, max_dd_pct=0.50,
+                        spread_mode="realistic", regimes=["trending", "ranging", "choppy"]),
+        CurriculumStage(name="university", steps=args.steps // 4, max_dd_pct=0.50,
+                        spread_mode="realistic", regimes=["trending", "ranging", "choppy"],
+                        use_augmentation=True),
+    ]
+    selected_stages = [all_stages[i] for i in stage_indices if i < len(all_stages)]
+    curriculum_config = CurriculumConfig(stages=selected_stages)
+    curriculum = CurriculumManager(config=curriculum_config)
 
     # ── Environments ──
     train_data = make_data(3000, seed=42)
@@ -283,7 +297,9 @@ def main() -> None:
 
     while step < args.steps:
         # ── Curriculum: update env params ──
-        stage_params = curriculum.get_stage(step)
+        curriculum.step()
+        stage_params = curriculum.get_env_params()
+        stage_params["stage"] = curriculum.state.stage_name
 
         # ── Collect one step ──
         obs_tensor = torch.from_numpy(obs).unsqueeze(0).to(device)
