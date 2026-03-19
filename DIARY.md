@@ -230,6 +230,32 @@ Volume features in top 10: `climax_volume` ✅
 **Kết quả:** 134/134 tests PASS ✅ | All Gates PASSED ✅ | SHAP verified ✅
 
 ---
+
+### 19/03/2026 — Sprint 6: Paper Trading & Live Infrastructure ✅
+
+**Branch:** `sprint6-live-infra` → merged to `main`
+**Người thực hiện:** AI Dev (lệnh từ Tech Lead Gem)
+
+**Thay đổi:**
+| File | Hành động | Mô tả |
+|------|-----------|-------|
+| `live/mt5_bridge.py` | Tạo mới | MT5 bridge: market orders + hard SL/TP, retry backoff, close-all |
+| `utils/telegram_bot.py` | Tạo mới | Telegram alerts: trade open/close, killswitch, daily summary |
+| `live/killswitch.py` | Tạo mới | DD monitor: ≥45% → close ALL + disable AI + Telegram alert |
+| `live/watchdog.py` | Tạo mới | Process health: heartbeat check 60s, auto-restart on crash |
+| `Dockerfile` | Tạo mới | Python 3.12-slim, healthcheck via heartbeat |
+| `docker-compose.yml` | Tạo mới | 2 services: trader (28 CPU/48GB) + watchdog (2 CPU/2GB) |
+| `tests/test_live_infra.py` | Tạo mới | 18 tests: killswitch (9), watchdog (4), telegram (2), mt5 (3) |
+
+**Kiến trúc phòng thủ:**
+```
+[MT5 Hard SL/TP] → [Action Gating] → [Killswitch DD Monitor] → [Watchdog]
+    ↓ Server-side     ↓ AI-side        ↓ Account-level       ↓ Process-level
+```
+
+**Kết quả:** 152/152 tests PASS ✅ | Docker ready ✅ | Defense layers: 4 ✅
+
+---
 TEMPLATE — Copy block dưới đây khi ghi nhật ký mới:
 
 ### DD/MM/YYYY — Tiêu đề ngắn
