@@ -78,6 +78,8 @@ def parse_args() -> argparse.Namespace:
                     help="Enable torch.compile() (default: True for L40)")
     p.add_argument("--grad-accum", type=int, default=2,
                     help="Gradient accumulation steps")
+    p.add_argument("--num_envs", type=int, default=8,
+                    help="Number of parallel envs (default 8, max 16 for Propfirm safety)")
     return p.parse_args()
 
 
@@ -139,6 +141,9 @@ def main() -> None:
     cap = torch.cuda.get_device_capability(0)
     use_bf16 = cap[0] >= 8  # Ada Lovelace (CC 8.9) supports BF16
 
+    # Safety cap: never exceed 16 envs (Propfirm protection)
+    args.num_envs = min(args.num_envs, 16)
+
     log.info("=" * 60)
     log.info("SCALFOREX — RUNPOD L40 TRAINING")
     log.info(f"  GPU:         {gpu_name} ({gpu_mem:.1f}GB)")
@@ -147,6 +152,7 @@ def main() -> None:
     log.info(f"  torch.compile: {args.compile}")
     log.info(f"  VRAM cap:    80% ({gpu_mem * 0.8:.1f}GB)")
     log.info(f"  CPU threads: 16 / 32 (Propfirm safety)")
+    log.info(f"  Num envs:    {args.num_envs}")
     log.info(f"  Steps:       {args.steps:,}")
     log.info(f"  Batch:       {args.batch}")
     log.info(f"  Grad Accum:  {args.grad_accum}")
