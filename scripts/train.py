@@ -99,7 +99,7 @@ def detect_device(requested: str) -> torch.device:
         if torch.cuda.is_available():
             device = torch.device("cuda")
             name = torch.cuda.get_device_name(0)
-            mem = torch.cuda.get_device_properties(0).total_mem / 1e9
+            mem = torch.cuda.get_device_properties(0).total_memory / 1e9
             log.info(f"🚀 GPU detected: {name} ({mem:.1f}GB)")
             return device
         else:
@@ -358,7 +358,7 @@ def main() -> None:
             # GPU memory
             if torch.cuda.is_available():
                 mem_used = torch.cuda.memory_allocated() / 1e6
-                mem_total = torch.cuda.get_device_properties(0).total_mem / 1e6
+                mem_total = torch.cuda.get_device_properties(0).total_memory / 1e6
                 log.info(f"  GPU: {mem_used:.0f}/{mem_total:.0f}MB")
 
             # W&B logging

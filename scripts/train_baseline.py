@@ -94,7 +94,7 @@ def main() -> None:
     # Hardware check
     if torch.cuda.is_available():
         gpu = torch.cuda.get_device_name(0)
-        mem = torch.cuda.get_device_properties(0).total_mem / 1e9
+        mem = torch.cuda.get_device_properties(0).total_memory / 1e9
         log.info(f"GPU: {gpu} ({mem:.1f}GB) — NO mixed precision (Maxwell)")
     else:
         log.info("No GPU — training on CPU (Dual Xeon)")
@@ -183,7 +183,7 @@ def main() -> None:
             )
             if torch.cuda.is_available():
                 mem_used = torch.cuda.memory_allocated() / 1e6
-                mem_total = torch.cuda.get_device_properties(0).total_mem / 1e6
+                mem_total = torch.cuda.get_device_properties(0).total_memory / 1e6
                 log.info(f"  GPU Mem: {mem_used:.0f}/{mem_total:.0f}MB")
 
     # === Final results ===
