@@ -34,5 +34,5 @@ account:
 # bắt vào Terminal Live đang mở → TRADE NHẦM TIỀN THẬT!
 mt5_connection:
   mt5_path: "C:\\Program Files\\MetaTrader 5 EXNESS - Demo\\terminal64.exe"
-  server: "Exness-MT5Trial9"         # Server Demo — kiểm tra kỹ tên server
+  server: "Exness-MT5Trial7"         # Server Demo — kiểm tra kỹ tên server
 
