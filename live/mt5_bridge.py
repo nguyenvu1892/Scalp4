@@ -230,18 +230,23 @@ class MT5Bridge:
         lot: float,
         sl_points: float = 0,
         tp_points: float = 0,
+        sl_price: float = 0.0,
+        tp_price: float = 0.0,
         comment: str = "ScalForex AI",
     ) -> OrderResult:
         """Send market order with hard SL/TP on broker server.
 
         SL/TP are set AT ORDER TIME — server-side protection.
+        If sl_price/tp_price are provided (>0), they override sl_points/tp_points.
 
         Args:
             symbol: Trading symbol.
             side: BUY or SELL.
             lot: Position size.
-            sl_points: Stop loss in points from entry.
-            tp_points: Take profit in points from entry.
+            sl_points: Stop loss in points from entry (fallback).
+            tp_points: Take profit in points from entry (fallback).
+            sl_price: Absolute SL price (overrides sl_points if > 0).
+            tp_price: Absolute TP price (overrides tp_points if > 0).
             comment: Order comment.
 
         Returns:
@@ -264,13 +269,13 @@ class MT5Bridge:
         if side == OrderSide.BUY:
             price = tick.ask
             order_type = mt5.ORDER_TYPE_BUY
-            sl = price - sl_points * point if sl_points > 0 else 0.0
-            tp = price + tp_points * point if tp_points > 0 else 0.0
+            sl = sl_price if sl_price > 0 else (price - sl_points * point if sl_points > 0 else 0.0)
+            tp = tp_price if tp_price > 0 else (price + tp_points * point if tp_points > 0 else 0.0)
         else:
             price = tick.bid
             order_type = mt5.ORDER_TYPE_SELL
-            sl = price + sl_points * point if sl_points > 0 else 0.0
-            tp = price - tp_points * point if tp_points > 0 else 0.0
+            sl = sl_price if sl_price > 0 else (price + sl_points * point if sl_points > 0 else 0.0)
+            tp = tp_price if tp_price > 0 else (price - tp_points * point if tp_points > 0 else 0.0)
 
         request = {
             "action": mt5.TRADE_ACTION_DEAL,

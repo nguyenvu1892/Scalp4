@@ -30,6 +30,7 @@ from data_engine.normalizer import WelfordNormalizer
 from live.killswitch import Killswitch
 from live.mt5_bridge import MT5Bridge, OrderSide
 from live.risk_manager import RiskManager
+from live.smc_levels import compute_smc_levels, compute_dynamic_sl_tp
 from live.watchdog import Watchdog
 from utils.logger import setup_logger
 from utils.telegram_bot import TelegramBot
@@ -60,6 +61,7 @@ SYMBOL_CONFIG = {
 
 # DISCIPLINE: Raised from 0.3 to 0.65 — stop overtrading!
 CONFIDENCE_THRESHOLD = 0.65
+MIN_RR_RATIO = 1.0  # RR < 1.0 = forced HOLD (risk > reward = no trade)
 
 
 class TradingBot:
@@ -413,16 +415,42 @@ class TradingBot:
         if self.risk_mgr and not self.risk_mgr.can_open_position(n_positions):
             return
 
-        cfg = SYMBOL_CONFIG.get(sym, {"sl_pts": 5000, "tp_pts": 5000, "lot": 0.01})
+        # ── DYNAMIC SMC SL/TP ──
+        # Pull 50 bars of M5 data for SMC level computation
+        m5_bars = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_M5, 0, 50)
+        if m5_bars is None or len(m5_bars) < 10:
+            log.warning(f"{sym}: Not enough M5 data for SMC levels")
+            return
+
+        highs = np.array([float(b["high"]) for b in m5_bars])
+        lows = np.array([float(b["low"]) for b in m5_bars])
+        closes_arr = np.array([float(b["close"]) for b in m5_bars])
+        entry_price = candle["close"]
+
+        smc = compute_smc_levels(highs, lows, closes_arr, entry_price)
+        sl_price, tp_price, rr = compute_dynamic_sl_tp(
+            side=side.value, current_price=entry_price, levels=smc,
+        )
+
+        # RR FILTER: reject trades with risk > reward
+        if rr < MIN_RR_RATIO:
+            log.info(
+                f"{sym}: {side.value} blocked by RR filter "
+                f"(RR={rr:.2f} < {MIN_RR_RATIO}) "
+                f"SL={sl_price:.5f} TP={tp_price:.5f}"
+            )
+            return
+
+        cfg = SYMBOL_CONFIG.get(sym, {"lot": 0.01})
         lot = cfg["lot"]
 
         result = self.mt5.send_market_order(
             symbol=sym,
             side=side,
             lot=lot,
-            sl_points=cfg["sl_pts"],
-            tp_points=cfg["tp_pts"],
-            comment=f"ScalForex AI c={confidence:.2f}",
+            sl_price=sl_price,
+            tp_price=tp_price,
+            comment=f"ScalForex AI c={confidence:.2f} RR={rr:.1f}",
         )
 
         if result.success:
@@ -435,9 +463,18 @@ class TradingBot:
                 "price": result.price,
                 "sl": result.sl,
                 "tp": result.tp,
+                "sl_smc": sl_price,
+                "tp_smc": tp_price,
+                "rr": rr,
                 "confidence": confidence,
                 "h1_trend": h1_trend,
                 "h4_trend": h4_trend,
+                "smc_swing_low": smc.swing_low,
+                "smc_swing_high": smc.swing_high,
+                "smc_ob_bull": smc.order_block_bull,
+                "smc_ob_bear": smc.order_block_bear,
+                "smc_liq_above": smc.liquidity_above,
+                "smc_liq_below": smc.liquidity_below,
                 "time": datetime.now().isoformat(),
             })
             session = self._get_session()
