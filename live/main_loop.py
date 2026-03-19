@@ -1,6 +1,6 @@
 """
 ScalForex — Main Trading Loop (Paper Trading)
-E2E Pipeline: M5 candle → Features → Normalize → MLP → Gating → MT5
+E2E Pipeline: M5 candle → Features → Normalize → Transformer SAC → Gating → MT5
 Target: < 500ms per cycle.
 """
 
@@ -40,7 +40,9 @@ log = setup_logger("live.main_loop")
 LOOKBACK = 60
 N_FEATURES = 27
 OBS_DIM = LOOKBACK * N_FEATURES
-CHECKPOINT_PATH = Path("checkpoints/baseline_mlp/baseline_mlp.pt")
+CHECKPOINT_PATH = Path("checkpoints/transformer/best.pt")
+MODEL_NAME = "Transformer SAC"
+HIDDEN_DIMS = [512, 256]  # Must match train.py architecture
 HEARTBEAT_PATH = Path("logs/heartbeat.txt")
 TRADE_LOG_PATH = Path("logs/trades.jsonl")
 SYMBOL = "XAUUSD"
@@ -57,7 +59,7 @@ class TradingBot:
         2. IncrementalFeatureBuilder → 27 features
         3. WelfordNormalizer → z-score
         4. Flatten lookback window → obs vector
-        5. MLP Policy → action [confidence, risk_fraction]
+        5. Transformer SAC Policy → action [confidence, risk_fraction]
         6. Action Gating → filter |conf| < 0.3
         7. Risk Manager → lot size, position check
         8. MT5 Bridge → execute order with hard SL/TP
@@ -107,14 +109,15 @@ class TradingBot:
 
     def _init_model(self) -> None:
         self.policy = SACPolicy(
-            obs_dim=OBS_DIM, action_dim=2, hidden_dims=[256, 256]
+            obs_dim=OBS_DIM, action_dim=2, hidden_dims=HIDDEN_DIMS
         )
         if CHECKPOINT_PATH.exists():
             ckpt = torch.load(CHECKPOINT_PATH, map_location=self.device, weights_only=True)
             self.policy.load_state_dict(ckpt["policy_state"])
-            log.info(f"Model loaded: {CHECKPOINT_PATH}")
+            params = sum(p.numel() for p in self.policy.parameters())
+            log.info(f"🧠 {MODEL_NAME} loaded: {CHECKPOINT_PATH} ({params:,} params)")
         else:
-            log.warning("No checkpoint — running with RANDOM policy!")
+            log.warning(f"No checkpoint at {CHECKPOINT_PATH} — running with RANDOM policy!")
         self.policy.eval()
 
     def _init_risk(self) -> None:
@@ -150,7 +153,7 @@ class TradingBot:
         """Start the 24/7 trading loop."""
         log.info("=" * 60)
         log.info("SCALFOREX — PAPER TRADING BOT STARTING")
-        log.info(f"Symbol: {SYMBOL} | Model: Baseline MLP")
+        log.info(f"Symbol: {SYMBOL} | Model: {MODEL_NAME}")
         log.info("=" * 60)
 
         # Connect MT5
@@ -168,7 +171,7 @@ class TradingBot:
             f"🤖 <b>ScalForex Bot STARTED</b>\n"
             f"━━━━━━━━━━━━━━━\n"
             f"📊 Symbol: {SYMBOL}\n"
-            f"🧠 Model: Baseline MLP\n"
+            f"🧠 Model: {MODEL_NAME}\n"
             f"💰 Balance: ${info.get('balance', 0):.2f}\n"
             f"🛡️ Killswitch: DD > 45%\n"
             f"⏰ {datetime.now().strftime('%H:%M:%S')}"
