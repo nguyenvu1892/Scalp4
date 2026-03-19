@@ -38,8 +38,8 @@ log = setup_logger("live.main_loop")
 
 # ── Constants ──
 LOOKBACK = 60
-N_FEATURES = 29          # 27 base + h1_trend + h4_trend
-OBS_DIM = LOOKBACK * N_FEATURES  # 1740
+N_FEATURES = 27          # Model trained with 27 (h1/h4 used as filter, not input)
+OBS_DIM = LOOKBACK * N_FEATURES  # 1620 — must match trained checkpoint
 CHECKPOINT_PATH = Path("checkpoints/transformer/best.pt")
 MODEL_NAME = "Transformer SAC"
 HIDDEN_DIMS = [512, 256]  # Must match train.py architecture
@@ -269,10 +269,8 @@ class TradingBot:
     def _features_to_vec(
         features: dict, h1_trend: float, h4_trend: float,
     ) -> np.ndarray:
-        """Build 29-feature vector from feature dict + multi-TF trends."""
+        """Build 27-feature vector (model input). h1/h4 used as filter only."""
         base = [features.get(k, 0.0) for k in FEATURE_COLUMNS[:27]]
-        base.append(h1_trend)
-        base.append(h4_trend)
         return np.array(base, dtype=np.float32)
 
     def _cycle(self) -> None:
@@ -401,11 +399,19 @@ class TradingBot:
         if abs(confidence) < CONFIDENCE_THRESHOLD:
             return  # HOLD
 
+        # H1/H4 TREND FILTER — don't trade against higher timeframe!
+        side = OrderSide.BUY if confidence > 0 else OrderSide.SELL
+        if side == OrderSide.BUY and h1_trend < 0:
+            log.info(f"{sym}: BUY blocked by H1 downtrend (h1={h1_trend}, h4={h4_trend})")
+            return
+        if side == OrderSide.SELL and h1_trend > 0:
+            log.info(f"{sym}: SELL blocked by H1 uptrend (h1={h1_trend}, h4={h4_trend})")
+            return
+
         # Position limit
         if self.risk_mgr and not self.risk_mgr.can_open_position(n_positions):
             return
 
-        side = OrderSide.BUY if confidence > 0 else OrderSide.SELL
         cfg = SYMBOL_CONFIG.get(sym, {"sl_pts": 5000, "tp_pts": 5000, "lot": 0.01})
         lot = cfg["lot"]
 
