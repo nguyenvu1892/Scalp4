@@ -42,6 +42,7 @@ LOOKBACK = 60
 N_FEATURES = 27          # Model trained with 27 (h1/h4 used as filter, not input)
 OBS_DIM = LOOKBACK * N_FEATURES  # 1620 — must match trained checkpoint
 CHECKPOINT_PATH = Path("checkpoints/transformer/best.pt")
+NORMALIZER_DIR = Path("checkpoints/transformer")
 MODEL_NAME = "Transformer SAC"
 HIDDEN_DIMS = [512, 256]  # Must match train.py architecture
 HEARTBEAT_PATH = Path("logs/heartbeat.txt")
@@ -53,7 +54,7 @@ SYMBOLS = ["XAUUSD", "ETHUSD", "BTCUSD", "US30", "USTEC"]
 # SL/TP in points per symbol (point size differs)
 SYMBOL_CONFIG = {
     "XAUUSD": {"sl_pts": 5000, "tp_pts": 5000, "lot": 0.01},    # $50
-    "ETHUSD": {"sl_pts": 5000, "tp_pts": 5000, "lot": 0.01},    # $50
+    "ETHUSD": {"sl_pts": 5000, "tp_pts": 5000, "lot": 0.1},     # Exness min lot
     "BTCUSD": {"sl_pts": 50000,"tp_pts": 50000,"lot": 0.01},    # $500
     "US30":   {"sl_pts": 500,  "tp_pts": 500,  "lot": 0.01},    # 50 pts
     "USTEC":  {"sl_pts": 500,  "tp_pts": 500,  "lot": 0.01},    # 50 pts
@@ -163,7 +164,19 @@ class TradingBot:
 
         for sym in SYMBOLS:
             self._builders[sym] = IncrementalFeatureBuilder(config=cfg)
-            self._normalizers[sym] = WelfordNormalizer(n_features=N_FEATURES)
+
+            # Try to load normalizer state from training checkpoint
+            norm_path = NORMALIZER_DIR / f"normalizer_{sym}.npz"
+            if norm_path.exists():
+                self._normalizers[sym] = WelfordNormalizer.load(norm_path)
+                log.info(
+                    f"[NORM] Loaded Welford Normalizer for {sym}: "
+                    f"count={self._normalizers[sym].count}"
+                )
+            else:
+                self._normalizers[sym] = WelfordNormalizer(n_features=N_FEATURES)
+                log.info(f"[NORM] Fresh normalizer for {sym} (will warm from live data)")
+
             self._buffers[sym] = []
             self._last_candle[sym] = None
 
@@ -254,7 +267,15 @@ class TradingBot:
 
             self._buffers[sym] = buf[-LOOKBACK:]
             self._last_candle[sym] = datetime.fromtimestamp(rates[-1]["time"])
-            log.info(f"  {sym}: {len(rates)} bars, buffer={len(self._buffers[sym])}")
+
+            # Auto-save normalizer state for next restart
+            norm_save = NORMALIZER_DIR / f"normalizer_{sym}.npz"
+            normalizer.save(norm_save)
+
+            log.info(
+                f"  {sym}: {len(rates)} bars, buffer={len(self._buffers[sym])}, "
+                f"norm_count={normalizer.count}"
+            )
 
     @staticmethod
     def _compute_tf_trend(rates) -> float:
