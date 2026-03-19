@@ -130,7 +130,14 @@ class TradingBot:
         )
         if CHECKPOINT_PATH.exists():
             ckpt = torch.load(CHECKPOINT_PATH, map_location=self.device, weights_only=True)
-            self.policy.load_state_dict(ckpt["policy_state"])
+            state = ckpt["policy_state"]
+            try:
+                self.policy.load_state_dict(state)
+            except RuntimeError:
+                # Strip _orig_mod. prefix from torch.compile() saved model
+                clean = {k.replace("_orig_mod.", ""): v for k, v in state.items()}
+                self.policy.load_state_dict(clean)
+                log.info("[BRAIN] Stripped torch.compile prefix from checkpoint")
             params = sum(p.numel() for p in self.policy.parameters())
             log.info(f"[BRAIN] {MODEL_NAME} loaded: {CHECKPOINT_PATH} ({params:,} params)")
         else:
