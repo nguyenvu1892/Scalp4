@@ -92,18 +92,19 @@ class TradingBot:
         # ── Initialize components ──
         self._init_mt5()
         self._init_telegram()
+
+        # State — per-symbol (must init BEFORE _init_feature_engine)
+        self._builders: dict[str, object] = {}
+        self._normalizers: dict[str, object] = {}
+        self._buffers: dict[str, list] = {}
+        self._last_candle: dict[str, datetime | None] = {}
+        self._running = False
+        self._cycle_count = 0
+
         self._init_model()
         self._init_risk()
         self._init_defense()
         self._init_feature_engine()
-
-        # State — per-symbol feature builders
-        self._builders: dict[str, object] = {}     # symbol → IncrementalFeatureBuilder
-        self._normalizers: dict[str, object] = {}  # symbol → WelfordNormalizer
-        self._buffers: dict[str, list] = {}         # symbol → feature buffer
-        self._last_candle: dict[str, datetime | None] = {}
-        self._running = False
-        self._cycle_count = 0
 
     def _init_mt5(self) -> None:
         self.mt5 = MT5Bridge(
@@ -128,7 +129,7 @@ class TradingBot:
             ckpt = torch.load(CHECKPOINT_PATH, map_location=self.device, weights_only=True)
             self.policy.load_state_dict(ckpt["policy_state"])
             params = sum(p.numel() for p in self.policy.parameters())
-            log.info(f"🧠 {MODEL_NAME} loaded: {CHECKPOINT_PATH} ({params:,} params)")
+            log.info(f"[BRAIN] {MODEL_NAME} loaded: {CHECKPOINT_PATH} ({params:,} params)")
         else:
             log.warning(f"No checkpoint at {CHECKPOINT_PATH} — running with RANDOM policy!")
         self.policy.eval()
@@ -186,14 +187,14 @@ class TradingBot:
 
         # Startup telegram
         self.telegram.send_message(
-            f"🤖 <b>ScalForex Bot STARTED</b>\n"
-            f"━━━━━━━━━━━━━━━\n"
-            f"📊 Symbols: {', '.join(SYMBOLS)}\n"
-            f"🧠 Model: {MODEL_NAME}\n"
-            f"🎯 Confidence: {CONFIDENCE_THRESHOLD}\n"
-            f"💰 Balance: ${info.get('balance', 0):.2f}\n"
-            f"🛡️ Killswitch: DD > 45%\n"
-            f"⏰ {datetime.now().strftime('%H:%M:%S')}"
+            f"<b>ScalForex Bot STARTED</b>\n"
+            f"---\n"
+            f"Symbols: {', '.join(SYMBOLS)}\n"
+            f"Model: {MODEL_NAME}\n"
+            f"Confidence: {CONFIDENCE_THRESHOLD}\n"
+            f"Balance: ${info.get('balance', 0):.2f}\n"
+            f"Killswitch: DD > 45%\n"
+            f"{datetime.now().strftime('%H:%M:%S')}"
         )
 
         # Warm up feature builder with recent history
